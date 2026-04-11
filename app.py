@@ -4,15 +4,14 @@ import pandas as pd
 from datetime import datetime
 
 # Mapping Yahoo Tickers to exact TradingView IDs
+# --- MASTER TRADINGVIEW MAPPING ---
 TV_MAP = {
+    # 🇮🇳 Indian Indices & Sectors
     "^NSEI": "NSE:NIFTY",
     "^NSEBANK": "NSE:BANKNIFTY",
-    "^GSPC": "INDEX:SPX",
-    "^IXIC": "NASDAQ:IXIC",
-    "^GDAXI": "XETR:DAX",
     "^CNXPSUBANK": "NSE:CNXPSUBANK",
-    "^CPSE": "NSE:CPSE",
-    "^CNXENERGY": "NSE:CNXENERGY",
+    "^PVTBANK": "NSE:NIFTY_PVT_BANK",
+    "^CNXFINANCE": "NSE:CNXFINANCE",
     "^CNXIT": "NSE:CNXIT",
     "^CNXAUTO": "NSE:CNXAUTO",
     "^CNXFMCG": "NSE:CNXFMCG",
@@ -20,8 +19,39 @@ TV_MAP = {
     "^CNXPHARMA": "NSE:CNXPHARMA",
     "^CNXREALTY": "NSE:CNXREALTY",
     "^CNXMEDIA": "NSE:CNXMEDIA",
+    "^CNXENERGY": "NSE:CNXENERGY",
     "^CNXINFRA": "NSE:CNXINFRA",
-    "DEFENCE.NS": "NSE:DEFENCE"
+    "^CPSE": "NSE:CPSE",
+    "^CNXCOMMODITIES": "NSE:CNXCOMMODITIES",
+    "^CNXCONSUMPTION": "NSE:CNXCONSUMPTION",
+    "^CNXSERVICE": "NSE:CNXSERVICE",
+    "^CNXCONSDURABL": "NSE:CNXCONSDURABLE",
+    "^CNXHEALTHCARE": "NSE:CNXHEALTHCARE",
+    "^CNXOILGAS": "NSE:CNXOILGAS",
+    "^CNXMFG": "NSE:CNXMANUFACTURING",
+    "DEFENCE.NS": "NSE:DEFENCE",
+
+    # 🌍 Global Indices
+    "^GSPC": "INDEX:SPX",        # S&P 500
+    "^IXIC": "NASDAQ:IXIC",      # Nasdaq
+    "^GDAXI": "XETR:DAX",        # DAX 40
+    "^FTSE": "INDEX:UKX",        # FTSE 100
+    "^N225": "TSE:NI225",        # Nikkei 225
+
+    # 💎 Commodities (Yahoo Tickers usually work directly, but these are safer)
+    "GC=F": "COMEX:GC1!",        # Gold Futures
+    "SI=F": "COMEX:SI1!",        # Silver Futures
+    "HG=F": "COMEX:HG1!",        # Copper Futures
+    "CL=F": "NYMEX:CL1!",        # Crude Oil
+    "NG=F": "NYMEX:NG1!",        # Natural Gas
+    "HRC=F": "NYMEX:HRC1!",      # Steel
+    "LIT": "AMEX:LIT",           # Lithium ETF
+
+    # 💱 Forex
+    "USDINR=X": "FX_IDC:USDINR",
+    "EURUSD=X": "FX:EURUSD",
+    "GBPUSD=X": "FX:GBPUSD",
+    "JPY=X": "FX:USDJPY"
 }
 
 # --- 1. PAGE CONFIG ---
