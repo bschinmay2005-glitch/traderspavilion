@@ -1,33 +1,21 @@
-import streamlit as st
-from SmartApi import SmartConnect
 import pyotp
-import pandas as pd
+from SmartApi import SmartConnect
 
-# --- 1. LOGIN CREDENTIALS ---
-# PRO-TIP: Put these in Streamlit Secrets, NOT in the code!
-API_KEY = "YOUR_API_KEY"
-CLIENT_ID = "YOUR_CLIENT_ID"
-PASSWORD = "YOUR_PASSWORD"
-TOTP_KEY = "YOUR_TOTP_SEED_KEY" # The key you get when enabling TOTP
+# 1. This must be the 26-digit SEED KEY from the portal
+TOTP_KEY = "YOUR_26_DIGIT_SEED_HERE" 
 
-def get_angel_data():
+def get_session():
     try:
-        # Initialize Angel One Connection
-        obj = SmartConnect(api_key=API_KEY)
-        token = pyotp.TOTP(TOTP_KEY).now()
-        data = obj.generateSession(CLIENT_ID, PASSWORD, token)
+        # 2. Clean the key (remove spaces if any)
+        clean_key = TOTP_KEY.replace(" ", "")
         
-        # Fetching Nifty 50 Spot Price
-        # Exchange: NSE, Token: 99926000 (Standard for Nifty 50)
-        ltp_data = obj.ltpData("NSE", "Nifty 50", "99926000")
-        return ltp_data['data']['ltp']
+        # 3. Generate the 6-digit code for THIS exact moment
+        totp_code = pyotp.TOTP(clean_key).now()
+        
+        # 4. Login using that code
+        obj = SmartConnect(api_key="YOUR_API_KEY")
+        data = obj.generateSession("YOUR_CLIENT_ID", "YOUR_PASSWORD", totp_code)
+        
+        return data
     except Exception as e:
-        st.error(f"Angel One Login Failed: {e}")
-        return None
-
-# --- 2. UI ---
-st.title("⚡ traderspavilion: Angel One Feed")
-
-price = get_angel_data()
-if price:
-    st.metric(label="NIFTY 50", value=f"₹{price:,.2f}")
+        return f"Error: {e}"
