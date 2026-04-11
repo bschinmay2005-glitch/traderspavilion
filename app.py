@@ -3,6 +3,27 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime
 
+# Mapping Yahoo Tickers to exact TradingView IDs
+TV_MAP = {
+    "^NSEI": "NSE:NIFTY",
+    "^NSEBANK": "NSE:BANKNIFTY",
+    "^GSPC": "INDEX:SPX",
+    "^IXIC": "NASDAQ:IXIC",
+    "^GDAXI": "XETR:DAX",
+    "^CNXPSUBANK": "NSE:CNXPSUBANK",
+    "^CPSE": "NSE:CPSE",
+    "^CNXENERGY": "NSE:CNXENERGY",
+    "^CNXIT": "NSE:CNXIT",
+    "^CNXAUTO": "NSE:CNXAUTO",
+    "^CNXFMCG": "NSE:CNXFMCG",
+    "^CNXMETAL": "NSE:CNXMETAL",
+    "^CNXPHARMA": "NSE:CNXPHARMA",
+    "^CNXREALTY": "NSE:CNXREALTY",
+    "^CNXMEDIA": "NSE:CNXMEDIA",
+    "^CNXINFRA": "NSE:CNXINFRA",
+    "DEFENCE.NS": "NSE:DEFENCE"
+}
+
 # --- 1. PAGE CONFIG ---
 st.set_page_config(
     page_title="traderspavilion",
