@@ -34,14 +34,15 @@ st.markdown("""
 @st.cache_data(ttl=30)
 def fetch_data(symbols_dict, timeframe):
     data_list = []
-    # Download in batch for speed
+    # Extract just the Yahoo tickers for the batch download
     yahoo_tickers = [v[0] for v in symbols_dict.values()]
     try:
         raw_data = yf.download(yahoo_tickers, period="1mo", interval="1d", group_by='ticker', progress=False)
-        for name, identifiers in symbols_dict.items():
-            y_sym = identifiers[0]
-            tv_id = identifiers[1]
+        for name, ids in symbols_dict.items():
+            y_sym = ids[0]
+            tv_id = ids[1]
             try:
+                # Handle single vs multi-ticker dataframe return from yf
                 df = raw_data[y_sym] if len(yahoo_tickers) > 1 else raw_data
                 if not df.empty:
                     current_price = df['Close'].iloc[-1].item()
@@ -55,30 +56,45 @@ def fetch_data(symbols_dict, timeframe):
 # --- 4. CONFIGURATIONS ---
 # [Yahoo Ticker, TradingView Link ID]
 INDIA_SECTORS = {
-    "Nifty 50": ["^NSEI", "NSE:NIFTY"], "Bank Nifty": ["^NSEBANK", "NSE:BANKNIFTY"],
-    "Nifty IT": ["^CNXIT", "NSE:CNXIT"], "Nifty Pharma": ["^CNXPHARMA", "NSE:CNXPHARMA"],
-    "Nifty Auto": ["^CNXAUTO", "NSE:CNXAUTO"], "Nifty Metal": ["^CNXMETAL", "NSE:CNXMETAL"],
-    "Nifty FMCG": ["^CNXFMCG", "NSE:CNXFMCG"], "Nifty Realty": ["^CNXREALTY", "NSE:CNXREALTY"],
-    "Nifty Energy": ["^CNXENERGY", "NSE:CNXENERGY"], "Nifty Infra": ["^CNXINFRA", "NSE:CNXINFRA"],
-    "Nifty PSU Bank": ["^CNXPSUBANK", "NSE:CNXPSUBANK"], "Nifty Pvt Bank": ["PVTBANK.NS", "NSE:NIFTY_PVT_BANK"],
-    "Nifty Media": ["MEDIA.NS", "NSE:CNXMEDIA"], "Nifty PSE": ["^CPSE", "NSE:CPSE"],
-    "Nifty Fin Service": ["^CNXFINANCE", "NSE:CNXFINANCE"], "Nifty Service": ["SERVICES.NS", "NSE:CNXSERVICE"],
-    "Nifty Commodities": ["COMMODITIES.NS", "NSE:CNXCOMMODITIES"], "Nifty Consumption": ["CONSUME.NS", "NSE:CNXCONSUMPTION"],
-    "Nifty Healthcare": ["^CNXHEALTHCARE", "NSE:CNXHEALTHCARE"], "Nifty Oil & Gas": ["^CNXOILGAS", "NSE:CNXOILGAS"],
-    "Nifty Mfg": ["MAKEINDIA.NS", "NSE:CNXMANUFACTURING"], "Nifty Defence": ["DEFENCE.NS", "NSE:DEFENCE"]
+    "Nifty 50": ["^NSEI", "NSE:NIFTY"],
+    "Bank Nifty": ["^NSEBANK", "NSE:BANKNIFTY"],
+    "Nifty IT": ["^CNXIT", "NSE:CNXIT"],
+    "Nifty Pharma": ["^CNXPHARMA", "NSE:CNXPHARMA"],
+    "Nifty Auto": ["^CNXAUTO", "NSE:CNXAUTO"],
+    "Nifty Metal": ["^CNXMETAL", "NSE:CNXMETAL"],
+    "Nifty FMCG": ["^CNXFMCG", "NSE:CNXFMCG"],
+    "Nifty Realty": ["^CNXREALTY", "NSE:CNXREALTY"],
+    "Nifty Energy": ["^CNXENERGY", "NSE:CNXENERGY"],
+    "Nifty Infra": ["^CNXINFRA", "NSE:CNXINFRA"],
+    "Nifty PSU Bank": ["^CNXPSUBANK", "NSE:CNXPSUBANK"],
+    "Nifty Pvt Bank": ["PVTBANK.NS", "NSE:NIFTY_PVT_BANK"],
+    "Nifty Media": ["MEDIA.NS", "NSE:CNXMEDIA"],
+    "Nifty PSE": ["^CPSE", "NSE:CPSE"],
+    "Nifty Fin Service": ["^CNXFINANCE", "NSE:CNXFINANCE"],
+    "Nifty Service": ["SERVICES.NS", "NSE:CNXSERVICE"],
+    "Nifty Commodities": ["COMMODITIES.NS", "NSE:CNXCOMMODITIES"],
+    "Nifty Consumption": ["CONSUME.NS", "NSE:CNXCONSUMPTION"],
+    "Nifty Healthcare": ["^CNXHEALTHCARE", "NSE:CNXHEALTHCARE"],
+    "Nifty Oil & Gas": ["^CNXOILGAS", "NSE:CNXOILGAS"],
+    "Nifty Mfg": ["MAKEINDIA.NS", "NSE:CNXMANUFACTURING"],
+    "Nifty Defence": ["DEFENCE.NS", "NSE:DEFENCE"]
 }
-
 GLOBAL_MARKETS = {
     "Indices": {
-        "S&P 500": ["^GSPC", "INDEX:SPX"], "Nasdaq 100": ["^IXIC", "INDEX:IUXX"], 
-        "DAX 40": ["^GDAXI", "XETR:DAX"], "FTSE 100": ["^FTSE", "INDEX:UKX"]
+        "S&P 500": ["^GSPC", "INDEX:SPX"],
+        "Nasdaq 100": ["^IXIC", "INDEX:IUXX"],
+        "DAX 40": ["^GDAXI", "XETR:DAX"],
+        "FTSE 100": ["^FTSE", "INDEX:UKX"]
     },
     "Commodities": {
-        "Gold": ["GC=F", "COMEX:GC1!"], "Silver": ["SI=F", "COMEX:SI1!"], 
-        "Crude Oil": ["CL=F", "NYMEX:CL1!"], "Natural Gas": ["NG=F", "NYMEX:NG1!"]
+        "Gold": ["GC=F", "COMEX:GC1!"],
+        "Silver": ["SI=F", "COMEX:SI1!"],
+        "Crude Oil": ["CL=F", "NYMEX:CL1!"],
+        "Natural Gas": ["NG=F", "NYMEX:NG1!"]
     },
     "Forex": {
-        "USD/INR": ["USDINR=X", "FX_IDC:USDINR"], "EUR/USD": ["EURUSD=X", "FX_IDC:EURUSD"], 
+        "USD/INR": ["USDINR=X", "FX_IDC:USDINR"],
+        "EUR/USD": ["EURUSD=X", "FX_IDC:EURUSD"],
         "GBP/USD": ["GBPUSD=X", "FX_IDC:GBPUSD"]
     }
 }
