@@ -31,7 +31,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 3. DATA ENGINE (FIXED TO STOP 'NAN' AND '404') ---
-@st.cache_data(ttl=15)
+@st.cache_data(ttl=20)
 def fetch_data(symbols_dict, timeframe):
     data_list = []
     # Pull all tickers in one batch for speed
