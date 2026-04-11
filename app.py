@@ -96,14 +96,29 @@ GLOBAL_MARKETS = {
 }
 
 INDIA_SECTORS = {
-    "Bank Nifty": "^NSEBANK", "Nifty PSU Bank": "^CNXPSUBANK", "Nifty Pvt Bank": "^PVTBANK",
-    "Nifty Fin Service": "^CNXFINANCE", "Nifty IT": "^CNXIT", "Nifty Auto": "^CNXAUTO",
-    "Nifty FMCG": "^CNXFMCG", "Nifty Metal": "^CNXMETAL", "Nifty Pharma": "^CNXPHARMA",
-    "Nifty Realty": "^CNXREALTY", "Nifty Media": "^CNXMEDIA", "Nifty Energy": "^CNXENERGY",
-    "Nifty Infra": "^CNXINFRA", "Nifty Commodities": "^CNXCOMMODITIES", "Nifty Consumption": "^CNXCONSUMPTION",
-    "Nifty Services": "^CNXSERVICE", "Nifty Healthcare": "^CNXHEALTHCARE", "Nifty Oil & Gas": "^CNXOILGAS",
-    "Nifty PSE": "^CPSE", "Nifty India Mfg": "NIFTY_INDIA_MFG.NS", "Nifty Cons Durables": "NIFTY_CONSR_DURBL.NS",
-    "Nifty Defence": "DEFENCE.NS"
+    "Bank Nifty": "^NSEBANK",
+    "Nifty PSU Bank": "^CNXPSUBANK",
+    "Nifty Pvt Bank": "^PVTBANK",
+    "Nifty IT": "^CNXIT",
+    "Nifty Auto": "^CNXAUTO",
+    "Nifty FMCG": "^CNXFMCG",
+    "Nifty Metal": "^CNXMETAL",
+    "Nifty Pharma": "^CNXPHARMA",
+    "Nifty Realty": "^CNXREALTY",
+    "Nifty Media": "^CNXMEDIA",
+    "Nifty Energy": "^CNXENERGY",
+    "Nifty Infra": "^CNXINFRA",
+    "Nifty Fin Service": "^CNXFINANCE",
+    "Nifty Commodities": "^CNXCOMMODITIES",
+    "Nifty Consumption": "^CNXCONSUMPTION",
+    "Nifty Services": "^CNXSERVICE",
+    "Nifty Healthcare": "^CNXHEALTHCARE",
+    "Nifty Oil & Gas": "^CNXOILGAS",
+    "Nifty PSE": "^CPSE",
+    "Nifty Microcap 250": "^NIFTY_MICROCAP250", # Added
+    "Nifty Midcap 100": "^MZNifty",           # Added
+    "Nifty Smallcap 100": "^CNXSC",          # Added
+    "Nifty India Defence": "DEFENCE.NS"
 }
 
 # --- 5. SIDEBAR ---
