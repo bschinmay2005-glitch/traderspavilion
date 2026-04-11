@@ -70,7 +70,7 @@ TV_MAP = {
     "^CNXHEALTHCARE": "NSE:CNXHEALTHCARE",
     "^CNXOILGAS": "NSE:CNXOILGAS", 
     "MAKEINDIA.NS": "NSE:CNXMANUFACTURING", 
-    "NIFTY_IND_DEFENCE": "NSE:NIFTY_IND_DEFENCE", 
+    "^NIFTY_IND_DEFENCE": "NSE:NIFTY_IND_DEFENCE", 
     "MNC.NS": "NSE:CNXMNC"
 }
 
@@ -83,7 +83,7 @@ INDIA_SECTORS = {
     "Nifty PSE": "^CPSE", "Nifty Fin Service": "^CNXFINANCE", "Nifty Service": "^CNXSERVICE", 
     "Nifty Commodities": "^CNXCOMMODITIES", "Nifty Consumption": "^CNXCONSUMPTION", 
     "Nifty Healthcare": "^CNXHEALTHCARE", "Nifty Oil & Gas": "^CNXOILGAS", 
-    "Nifty Mfg": "MAKEINDIA.NS", "Nifty Defence": "NIFTY_IND_DEFENCE", "Nifty MNC": "MNC.NS"
+    "Nifty Mfg": "MAKEINDIA.NS", "Nifty Defence": "^NIFTY_IND_DEFENCE", "Nifty MNC": "MNC.NS"
 }
 
 GLOBAL_MARKETS = {
