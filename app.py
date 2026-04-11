@@ -59,10 +59,21 @@ GLOBAL_MARKETS = {
     "Forex": {"USD/INR": "USDINR=X", "EUR/USD": "EURUSD=X", "GBP/USD": "GBPUSD=X"}
 }
 
+# --- 4. CONFIGURATIONS (Updated with PSU, PSE, Energy, and Defence) ---
 INDIA_SECTORS = {
-    "Nifty Bank": "^NSEBANK", "Nifty IT": "^CNXIT", "Nifty Auto": "^CNXAUTO", 
-    "Nifty FMCG": "^CNXFMCG", "Nifty Metal": "^CNXMETAL", "Nifty Pharma": "^CNXPHARMA", 
-    "Nifty Realty": "^CNXREALTY", "Nifty Media": "^CNXMEDIA", "Nifty Energy": "^CNXENERGY"
+    "Nifty Bank": "^NSEBANK",
+    "Nifty PSU Bank": "^CNXPSUBANK",  # Added PSU Bank
+    "Nifty PSE": "^CPSE",            # Added PSE
+    "Nifty Energy": "^CNXENERGY",    # Added Energy
+    "Defence (ETF)": "DEFENCE.NS",   # Added Defence Proxy
+    "Nifty IT": "^CNXIT", 
+    "Nifty Auto": "^CNXAUTO", 
+    "Nifty FMCG": "^CNXFMCG", 
+    "Nifty Metal": "^CNXMETAL", 
+    "Nifty Pharma": "^CNXPHARMA", 
+    "Nifty Realty": "^CNXREALTY", 
+    "Nifty Media": "^CNXMEDIA", 
+    "Nifty Infra": "^CNXINFRA"
 }
 
 # --- 5. SIDEBAR ---
