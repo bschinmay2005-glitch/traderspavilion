@@ -1,5 +1,5 @@
 import streamlit as st
-from nsepython import nse_get_index_quotes
+from nsepythonserver import nse_get_index_quotes
 import pandas as pd
 from datetime import datetime
 
