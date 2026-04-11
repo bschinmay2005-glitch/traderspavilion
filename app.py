@@ -39,11 +39,27 @@ def fetch_data(symbols_dict, timeframe):
             t = yf.Ticker(sym)
             df = t.history(period="7d" if timeframe in ["1d", "5d"] else timeframe)
             if not df.empty:
-                current_price = df['Close'].iloc[-1]
-                prev_price = df['Close'].iloc[-2] if timeframe == "1d" else df['Close'].iloc[0]
-                change = ((current_price - prev_price) / prev_price) * 100
-                data_list.append({"name": name, "symbol": sym, "price": current_price, "change": change})
-        except: continue
+    current_price = df['Close'].iloc[-1]
+    prev_price = df['Close'].iloc[-2] if timeframe == "1d" else df['Close'].iloc[0]
+    change = ((current_price - prev_price) / prev_price) * 100
+else:
+    # fallback when data is missing
+    current_price = 0
+    change = 0
+
+data_list.append({
+    "name": name,
+    "symbol": sym,
+    "price": current_price,
+    "change": change
+})
+        except Exception as e:
+    data_list.append({
+        "name": name,
+        "symbol": sym,
+        "price": 0,
+        "change": 0
+    })
     return data_list
 
 # --- 4. CONFIGURATIONS ---
