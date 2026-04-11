@@ -1,126 +1,78 @@
 import streamlit as st
-from NorenRestApiPy.NorenApi import NorenApi # pip install NorenRestApiPy
-from datetime import datetime
+import requests
 import pandas as pd
+from datetime import datetime
 
-# --- 1. PAGE CONFIG ---
-st.set_page_config(page_title="traderspavilion PRO", page_icon="⚡", layout="wide")
+# --- 1. THE LIVE DATA FETCH ENGINE ---
+def get_nse_live_data():
+    # NSE blocks basic scrapers, so we use 'Headers' to look like a Chrome browser
+    headers = {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'accept-language': 'en-US,en;q=0.9',
+        'accept-encoding': 'gzip, deflate, br'
+    }
+    
+    # We first visit the home page to get "Cookies" (NSE requirement)
+    session = requests.Session()
+    session.get("https://www.nseindia.com", headers=headers)
+    
+    # Now we hit the live API endpoint for all sector indices
+    url = "https://www.nseindia.com/api/allIndices"
+    response = session.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        return response.json()['data']
+    return []
 
-# --- 2. THE API CLASS ---
-class ShoonyaApi(NorenApi):
-    def __init__(self):
-        NorenApi.__init__(self, host='https://api.shoonya.com/NorenWSTree/', 
-                         websocket='wss://api.shoonya.com/NorenWSTree/')
-
-# --- 3. CSS (Your original styling) ---
+# --- 2. THE UI & MAPPING ---
+st.set_page_config(layout="wide")
 st.markdown("""
     <style>
-    .stApp { background: radial-gradient(circle at top left, #1a1c2c, #4a192c); }
+    .stApp { background: #0e1117; }
     .market-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
+        background: #1e222d;
+        border: 1px solid #363c4e;
+        border-radius: 8px;
         padding: 15px;
         text-align: center;
-        transition: transform 0.3s ease;
-        text-decoration: none !important;
-        display: block;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
-    .market-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); border-color: #22c55e; }
-    .symbol-name { font-size: 0.8rem; color: #888ea8; font-weight: 600; text-transform: uppercase; }
-    .price { font-size: 1.4rem; font-weight: 700; color: white; margin: 5px 0; }
-    .change-pos { color: #00ff88; font-size: 0.85rem; font-weight: bold; }
-    .change-neg { color: #ff3b3b; font-size: 0.85rem; font-weight: bold; }
+    .price { font-size: 1.3rem; font-weight: bold; color: white; }
+    .pos { color: #089981; } .neg { color: #f23645; }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# --- 4. CONFIGURATION (Official Exchange Tokens for 0-Delay) ---
-# Tokens are how the exchange identifies indices. These never change.
-INDIA_SECTORS = {
-    "Nifty 50": {"t": "26000", "tv": "NSE:NIFTY"},
-    "Bank Nifty": {"t": "26001", "tv": "NSE:BANKNIFTY"},
-    "Nifty IT": {"t": "26002", "tv": "NSE:CNXIT"},
-    "Nifty Pharma": {"t": "26005", "tv": "NSE:CNXPHARMA"},
-    "Nifty Auto": {"t": "26004", "tv": "NSE:CNXAUTO"},
-    "Nifty Metal": {"t": "26008", "tv": "NSE:CNXMETAL"},
-    "Nifty FMCG": {"t": "26006", "tv": "NSE:CNXFMCG"},
-    "Nifty Realty": {"t": "26011", "tv": "NSE:CNXREALTY"},
-    "Nifty Energy": {"t": "26009", "tv": "NSE:CNXENERGY"},
-    "Nifty Infra": {"t": "26012", "tv": "NSE:CNXINFRA"},
-    "Nifty PSU Bank": {"t": "26013", "tv": "NSE:CNXPSUBANK"},
-    "Nifty Pvt Bank": {"t": "26014", "tv": "NSE:NIFTY_PVT_BANK"},
-    "Nifty Media": {"t": "26010", "tv": "NSE:CNXMEDIA"},
-    "Nifty PSE": {"t": "26015", "tv": "NSE:CPSE"},
-    "Nifty Fin Service": {"t": "26007", "tv": "NSE:CNXFINANCE"},
-    "Nifty Service": {"t": "26017", "tv": "NSE:CNXSERVICE"},
-    "Nifty Commodities": {"t": "26018", "tv": "NSE:CNXCOMMODITIES"},
-    "Nifty Consumption": {"t": "26019", "tv": "NSE:CNXCONSUMPTION"},
-    "Nifty Healthcare": {"t": "26030", "tv": "NSE:CNXHEALTHCARE"},
-    "Nifty Oil & Gas": {"t": "26031", "tv": "NSE:CNXOILGAS"},
-    "Nifty Mfg": {"t": "26021", "tv": "NSE:CNXMANUFACTURING"},
-    "Nifty Defence": {"t": "26040", "tv": "NSE:DEFENCE"}
+# Map NSE Names to TradingView IDs (To avoid 404s)
+TV_MAP = {
+    "NIFTY 50": "NSE:NIFTY", "NIFTY BANK": "NSE:BANKNIFTY", "NIFTY IT": "NSE:CNXIT",
+    "NIFTY AUTO": "NSE:CNXAUTO", "NIFTY PHARMA": "NSE:CNXPHARMA", "NIFTY FMCG": "NSE:CNXFMCG",
+    "NIFTY REALTY": "NSE:CNXREALTY", "NIFTY METAL": "NSE:CNXMETAL", "NIFTY ENERGY": "NSE:CNXENERGY"
 }
 
-# --- 5. DATA ENGINE ---
-def fetch_realtime_data(api_instance):
-    data_list = []
-    for name, info in INDIA_SECTORS.items():
-        try:
-            # lp = Last Price, pc = Percentage Change
-            quote = api_instance.get_quotes(exch='NSE', token=info['t'])
-            if quote and 'lp' in quote:
-                data_list.append({
-                    "name": name,
-                    "price": float(quote['lp']),
-                    "change": float(quote['pc']),
-                    "tv_id": info['tv']
-                })
-        except: continue
-    return data_list
+st.title("⚡ NSE Real-Time Dashboard")
 
-# --- 6. SIDEBAR & LOGIN ---
-with st.sidebar:
-    st.sidebar.markdown("# traders<span style='color:#22c55e'>pavilion</span> ⚡", unsafe_allow_html=True)
-    st.caption("REAL-TIME BROKER FEED")
-    st.divider()
+try:
+    raw_data = get_nse_live_data()
+    cols = st.columns(4)
     
-    # In a real app, use st.secrets or environment variables for these
-    u_id = st.text_input("Shoonya User ID")
-    u_pwd = st.text_input("Password", type="password")
-    u_pan = st.text_input("PAN / DOB (YYYYMMDD)")
-    u_apikey = st.text_input("API Key")
-    u_imei = st.text_input("IMEI / Vendor Code")
-    
-    login_btn = st.button("🚀 CONNECT LIVE FEED")
-
-# --- 7. MAIN UI ---
-if login_btn:
-    api = ShoonyaApi()
-    login_status = api.login(user=u_id, pwd=u_pwd, dob=u_pan, as_id=u_apikey, api_key=u_apikey, imei=u_imei)
-    
-    if login_status and login_status.get('stat') == 'Ok':
-        st.success(f"Connected to NSE Real-Time Feed at {datetime.now().strftime('%H:%M:%S')}")
-        
-        # Display Cards
-        data = fetch_realtime_data(api)
-        cols = st.columns(4)
-        for i, item in enumerate(data):
-            with cols[i % 4]:
-                color = "change-pos" if item['change'] >= 0 else "change-neg"
-                arrow = "▲" if item['change'] >= 0 else "▼"
-                url = f"https://www.tradingview.com/symbols/{item['tv_id']}"
+    # Filter only the sectors we want
+    for i, item in enumerate(raw_data):
+        name = item['index']
+        if name in TV_MAP:
+            with cols[len(TV_MAP) % 4]: # Simplified column logic
+                color = "pos" if item['percentChange'] >= 0 else "neg"
+                url = f"https://www.tradingview.com/symbols/{TV_MAP[name]}"
                 
                 st.markdown(f"""
-                    <a href="{url}" target="_blank" style="text-decoration:none">
-                        <div class="market-card">
-                            <div class="symbol-name">{item['name']}</div>
-                            <div class="price">{item['price']:,.2f}</div>
-                            <div class="{color}">{arrow} {abs(item['change']):.2f}%</div>
-                        </div>
-                    </a>""", unsafe_allow_html=True)
-    else:
-        st.error("Login Failed. Check your Shoonya Credentials.")
-else:
-    st.info("Enter your Shoonya credentials in the sidebar to start the 0-delay feed.")
+                <a href="{url}" target="_blank" style="text-decoration:none">
+                    <div class="market-card">
+                        <div style="color:gray; font-size:0.8rem;">{name}</div>
+                        <div class="price">{item['last']:,.2f}</div>
+                        <div class="{color}">{item['percentChange']:.2f}%</div>
+                    </div>
+                </a>
+                """, unsafe_allow_html=True)
+except Exception as e:
+    st.error("NSE Server Busy. Refresh in 5 seconds.")
+
+st.caption(f"Last sync: {datetime.now().strftime('%H:%M:%S')} (Direct from NSE)")
