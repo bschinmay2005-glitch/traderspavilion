@@ -55,8 +55,8 @@ INDIA_SECTORS = {
     "Nifty PSU Bank": "^CNXPSUBANK", "Nifty Pvt Bank": "^PVTBANK", "Nifty Media": "^CNXMEDIA", 
     "Nifty PSE": "^CPSE", "Nifty Fin Service": "^CNXFINANCE", "Nifty Service": "^CNXSERVICE", 
     "Nifty Commodities": "^CNXCOMMODITIES", "Nifty Consumption": "^CNXCONSUMPTION", 
-    "Nifty Healthcare": "^CNXHEALTHCARE", "Nifty Oil & Gas": "^CNXOILGAS", 
-    "Nifty Mfg": "MAKEINDIA.NS", "Nifty Defence": "DEFENCE.NS", "Nifty MNC": "MNC.NS"
+    "Nifty Healthcare": "^NIFTY_HEALTHCARE", "Nifty Oil & Gas": "^NIFTY_OIL_AND_GAS", 
+    "Nifty Mfg": "NIFTY_INDIA_MFG", "Nifty Defence": "NIFTY_IND_DEFENCE", "Nifty MNC": "MNC.NS"
 }
 
 GLOBAL_MARKETS = {
