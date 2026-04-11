@@ -82,19 +82,17 @@ GLOBAL_MARKETS = {
 
 # --- 4. CONFIGURATIONS (Updated with PSU, PSE, Energy, and Defence) ---
 INDIA_SECTORS = {
-    "Nifty Bank": "^NSEBANK",
-    "Nifty PSU Bank": "^CNXPSUBANK",  # Added PSU Bank
-    "Nifty PSE": "^CPSE",            # Added PSE
-    "Nifty Energy": "^CNXENERGY",    # Added Energy
-    "Defence (ETF)": "DEFENCE.NS",   # Added Defence Proxy
-    "Nifty IT": "^CNXIT", 
-    "Nifty Auto": "^CNXAUTO", 
-    "Nifty FMCG": "^CNXFMCG", 
-    "Nifty Metal": "^CNXMETAL", 
-    "Nifty Pharma": "^CNXPHARMA", 
-    "Nifty Realty": "^CNXREALTY", 
-    "Nifty Media": "^CNXMEDIA", 
-    "Nifty Infra": "^CNXINFRA"
+    "Bank Nifty": "^NSEBANK",       # Corrected from Nifty Bank
+    "Nifty PSU Bank": "^CNXPSUBANK",
+    "Nifty PSE": "^CPSE",
+    "Nifty Energy": "^CNXENERGY",
+    "Nifty India Defence": "DEFENCE.NS", # Identifying it as the specific index ETF
+    "Nifty IT": "^CNXIT",
+    "Nifty Auto": "^CNXAUTO",
+    "Nifty FMCG": "^CNXFMCG",
+    "Nifty Metal": "^CNXMETAL",
+    "Nifty Pharma": "^CNXPHARMA",
+    "Nifty Realty": "^CNXREALTY"
 }
 
 # --- 5. SIDEBAR ---
