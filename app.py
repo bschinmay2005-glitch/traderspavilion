@@ -232,6 +232,7 @@ for i, category in enumerate(MARKETS.keys()):
 # Footer Auto-Refresh Info
 st.caption(f"Last updated: {datetime.now().strftime('%H:%M:%S')} | Data provided by Yahoo Finance")
     with st.expander("View Detailed Prices"):
+    st.write("Data table here")
         st.dataframe(df[["Sector", "LTP", "Change %"]], use_container_width=True)
 else:
     st.warning("Waiting for Market Data... Ensure you are running this during market hours.")
