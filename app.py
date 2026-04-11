@@ -31,27 +31,29 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 3. DATA ENGINE (FIXED TO STOP 'NAN' AND '404') ---
-@st.cache_data(ttl=5) # Reduced TTL so it clears faster
+@st.cache_data(ttl=15)
 def fetch_data(symbols_dict, timeframe):
     data_list = []
-    # Grab all Yahoo tickers
+    # Pull all tickers in one batch for speed
     tickers = [v[0] for v in symbols_dict.values()]
     
-    # Force a fresh download
     try:
-        raw = yf.download(tickers, period="5d", interval="1d", group_by='ticker', progress=False)
+        # We fetch 1mo to ensure we always have a 'previous' day to compare
+        raw = yf.download(tickers, period="1mo", interval="1d", group_by='ticker', progress=False)
         
         for name, ids in symbols_dict.items():
             y_sym = ids[0]
             tv_id = ids[1]
             try:
-                # Target the specific ticker's data
+                # Select the ticker. If batch download returns a single DF, handle it.
                 df = raw[y_sym] if len(tickers) > 1 else raw
-                df = df.dropna() # KILL THE NANs HERE
+                df = df.dropna(subset=['Close']) # Only drop if price is missing
                 
-                if not df.empty:
+                if not df.empty and len(df) >= 2:
                     current_price = float(df['Close'].iloc[-1])
+                    # If 1d timeframe, compare to yesterday. Else compare to start of month.
                     prev_price = float(df['Close'].iloc[-2]) if timeframe == "1d" else float(df['Close'].iloc[0])
+                    
                     change = ((current_price - prev_price) / prev_price) * 100
                     
                     data_list.append({
@@ -60,10 +62,8 @@ def fetch_data(symbols_dict, timeframe):
                         "price": current_price, 
                         "change": change
                     })
-            except Exception:
-                continue
-    except Exception:
-        pass
+            except: continue
+    except: pass
     return data_list
 
 # --- 4. CONFIGURATIONS (VERIFIED TICKER PAIRS) ---
@@ -86,8 +86,8 @@ INDIA_SECTORS = {
     "Nifty Service": ["SERVICES.NS", "NSE:CNXSERVICE"],
     "Nifty Commodities": ["COMMODITIES.NS", "NSE:CNXCOMMODITIES"],
     "Nifty Consumption": ["CONSUME.NS", "NSE:CNXCONSUMPTION"],
-    "Nifty Healthcare": ["^CNXHEALTHCARE", "NSE:CNXHEALTHCARE"],
-    "Nifty Oil & Gas": ["^CNXOILGAS", "NSE:CNXOILGAS"],
+    "Nifty Healthcare": ["HEALTHY.NS", "NSE:CNXHEALTHCARE"],
+    "Nifty Oil & Gas": ["OIL.NS", "NSE:CNXOILGAS"],
     "Nifty Mfg": ["MAKEINDIA.NS", "NSE:CNXMANUFACTURING"],
     "Nifty Defence": ["DEFENCE.NS", "NSE:DEFENCE"]
 }
