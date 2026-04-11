@@ -1,45 +1,57 @@
 import streamlit as st
-import yfinance as yf
+from nsepython import nse_get_index_quotes
 import pandas as pd
+from datetime import datetime
 
-# --- 1. DATA ENGINE (The Fix) ---
-@st.cache_data(ttl=60) # Updates every 60 seconds
-def get_stable_data():
-    # We use ETFs (Ending in .NS) because Index tickers (^NSEI) are glitching
-    # NIFTYBEES tracks Nifty 50, BANKBEES tracks Bank Nifty, etc.
-    mapping = {
-        "Nifty 50": "NIFTYBEES.NS",
-        "Bank Nifty": "BANKBEES.NS",
-        "Nifty IT": "ITBEES.NS",
-        "Nifty Pharma": "PHARMABEES.NS",
-        "Nifty Junior": "JUNIORBEES.NS",
-        "Nifty Gold": "GOLDBEES.NS"
-    }
+# --- 1. DATA ENGINE (NSE DIRECT) ---
+@st.cache_data(ttl=30)
+def get_nse_data():
+    try:
+        # This function fetches all sectoral indices in one shot
+        data = nse_get_index_quotes()
+        return data
+    except Exception as e:
+        st.error(f"NSE Connection Blocked: {e}")
+        return []
+
+# --- 2. CONFIG & UI ---
+st.set_page_config(layout="wide")
+
+# Mapping NSE index names to TradingView IDs
+TV_MAP = {
+    "NIFTY 50": "NSE:NIFTY", "NIFTY BANK": "NSE:BANKNIFTY", 
+    "NIFTY IT": "NSE:CNXIT", "NIFTY AUTO": "NSE:CNXAUTO",
+    "NIFTY PHARMA": "NSE:CNXPHARMA", "NIFTY FMCG": "NSE:CNXFMCG",
+    "NIFTY METAL": "NSE:CNXMETAL", "NIFTY REALTY": "NSE:CNXREALTY"
+}
+
+st.title("⚡ Direct NSE Live Watch")
+
+raw_indices = get_nse_data()
+
+if raw_indices:
+    cols = st.columns(4)
+    # We filter for the specific sectors we want to display
+    valid_data = [i for i in raw_indices if i['indexName'] in TV_MAP]
     
-    data = []
-    tickers = list(mapping.values())
-    raw = yf.download(tickers, period="5d", interval="1d", group_by='ticker')
-    
-    for name, ticker in mapping.items():
-        try:
-            df = raw[ticker].dropna()
-            price = df['Close'].iloc[-1]
-            prev = df['Close'].iloc[-2]
-            change = ((price - prev) / prev) * 100
-            data.append({"name": name, "price": price, "change": change})
-        except: continue
-    return data
+    for idx, item in enumerate(valid_data):
+        with cols[idx % 4]:
+            name = item['indexName']
+            price = item['last']
+            change = float(item['percentChange'])
+            color = "#00ff88" if change >= 0 else "#ff3b3b"
+            url = f"https://www.tradingview.com/symbols/{TV_MAP[name]}"
+            
+            st.markdown(f"""
+                <a href="{url}" target="_blank" style="text-decoration:none">
+                    <div style="background:#1e222d; border:1px solid #363c4e; border-radius:10px; padding:20px; text-align:center; margin-bottom:15px;">
+                        <div style="color:gray; font-size:0.8rem; font-weight:bold;">{name}</div>
+                        <div style="color:white; font-size:1.5rem; font-weight:bold; margin:10px 0;">{price}</div>
+                        <div style="color:{color}; font-weight:bold;">{"▲" if change >= 0 else "▼"} {abs(change):.2f}%</div>
+                    </div>
+                </a>
+            """, unsafe_allow_html=True)
+else:
+    st.warning("NSE is currently blocking the connection. Try refreshing in 10 seconds.")
 
-# --- 2. THE UI ---
-st.set_page_config(page_title="traderspavilion", layout="wide")
-st.markdown("<style>.stApp { background: #0e1117; color: white; }</style>", unsafe_allow_html=True)
-st.title("⚡ Stable Market Watch")
-
-# Use your existing card-styling CSS here...
-sectors = get_stable_data()
-cols = st.columns(3)
-
-for i, sector in enumerate(sectors):
-    with cols[i % 3]:
-        color = "green" if sector['change'] >= 0 else "red"
-        st.metric(label=sector['name'], value=f"{sector['price']:,.2f}", delta=f"{sector['change']:.2f}%")
+st.caption(f"Last sync: {datetime.now().strftime('%H:%M:%S')} (Source: NSE India)")
