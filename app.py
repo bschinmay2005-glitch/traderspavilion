@@ -47,42 +47,43 @@ def fetch_data(symbols_dict, timeframe):
         except: continue
     return data_list
 # --- 4. CONFIGURATIONS (VERIFIED YAHOO TICKERS) ---
-INDIA_SECTORS = {
-    "Nifty Bank": "^NSEBANK", 
-    "Nifty IT": "^CNXIT", 
-    "Nifty Pharma": "^CNXPHARMA", 
-    "Nifty Auto": "^CNXAUTO", 
-    "Nifty Metal": "^CNXMETAL", 
-    "Nifty FMCG": "^CNXFMCG", 
-    "Nifty Realty": "^CNXREALTY", 
-    "Nifty Energy": "^CNXENERGY", 
-    "Nifty Infra": "^CNXINFRA", 
-    "Nifty PSU Bank": "^CNXPSUBANK", 
-    "Nifty Pvt Bank": "^PVTBANK", 
-    "Nifty Media": "^CNXMEDIA", 
-    "Nifty PSE": "^CPSE", 
-    "Nifty Fin Service": "^CNXFINANCE", 
-    "Nifty Service": "^CNXSERVICE", 
-    "Nifty Commodities": "^CNXCOMMODITIES", 
-    "Nifty Consumption": "^CNXCONSUMPTION", 
-    "Nifty Healthcare": "^CNXHEALTHCARE", 
-    "Nifty Oil & Gas": "^CNXOILGAS", 
-    "Nifty Mfg": "MAKEINDIA.NS", 
-    "Nifty Defence": "DEFENCE.NS", 
-    "Nifty MNC": "MNC.NS"
+# --- 3. MASTER MAPPING (TV) - Fixes the 404 Errors ---
+TV_MAP = {
+    "^NSEI": "NSE:NIFTY", 
+    "^NSEBANK": "NSE:BANKNIFTY", 
+    "^CNXIT": "NSE:CNXIT",
+    "^CNXPHARMA": "NSE:CNXPHARMA", 
+    "^CNXAUTO": "NSE:CNXAUTO", 
+    "^CNXMETAL": "NSE:CNXMETAL",
+    "^CNXFMCG": "NSE:CNXFMCG", 
+    "^CNXREALTY": "NSE:CNXREALTY", 
+    "^CNXENERGY": "NSE:CNXENERGY",
+    "^CNXINFRA": "NSE:CNXINFRA", 
+    "^CNXPSUBANK": "NSE:CNXPSUBANK", 
+    "^PVTBANK": "NSE:NIFTY_PVT_BANK",
+    "^CNXMEDIA": "NSE:CNXMEDIA", 
+    "^CPSE": "NSE:CPSE", 
+    "^CNXFINANCE": "NSE:CNXFINANCE",
+    "^CNXSERVICE": "NSE:CNXSERVICE", 
+    "^CNXCOMMODITIES": "NSE:CNXCOMMODITIES",
+    "^CNXCONSUMPTION": "NSE:CNXCONSUMPTION", 
+    "^CNXHEALTHCARE": "NSE:CNXHEALTHCARE",
+    "^CNXOILGAS": "NSE:CNXOILGAS", 
+    "MAKEINDIA.NS": "NSE:CNXMANUFACTURING", 
+    "DEFENCE.NS": "NSE:DEFENCE", 
+    "MNC.NS": "NSE:CNXMNC"
 }
 
-# --- 3. MASTER MAPPING (TV) ---
-TV_MAP = {
-    "^NSEI": "NSE:NIFTY", "^NSEBANK": "NSE:BANKNIFTY", "^CNXIT": "NSE:CNXIT",
-    "^CNXPHARMA": "NSE:CNXPHARMA", "^CNXAUTO": "NSE:CNXAUTO", "^CNXMETAL": "NSE:CNXMETAL",
-    "^CNXFMCG": "NSE:CNXFMCG", "^CNXREALTY": "NSE:CNXREALTY", "^CNXENERGY": "NSE:CNXENERGY",
-    "^CNXINFRA": "NSE:CNXINFRA", "^CNXPSUBANK": "NSE:CNXPSUBANK", "^PVTBANK": "NSE:NIFTY_PVT_BANK",
-    "^CNXMEDIA": "NSE:CNXMEDIA", "^CPSE": "NSE:CPSE", "^CNXFINANCE": "NSE:CNXFINANCE",
-    "^CNXSERVICE": "NSE:CNXSERVICE", "^CNXCOMMODITIES": "NSE:CNXCOMMODITIES",
-    "^CNXCONSUMPTION": "NSE:CNXCONSUMPTION", "^CNXHEALTHCARE": "NSE:CNXHEALTHCARE",
-    "^CNXOILGAS": "NSE:CNXOILGAS", "MAKEINDIA.NS": "NSE:CNXMANUFACTURING", 
-    "DEFENCE.NS": "NSE:DEFENCE", "MNC.NS": "NSE:CNXMNC"
+# --- 4. CONFIGURATIONS (High-Uptime Yahoo Tickers) ---
+INDIA_SECTORS = {
+    "Nifty Bank": "^NSEBANK", "Nifty IT": "^CNXIT", "Nifty Pharma": "^CNXPHARMA", 
+    "Nifty Auto": "^CNXAUTO", "Nifty Metal": "^CNXMETAL", "Nifty FMCG": "^CNXFMCG", 
+    "Nifty Realty": "^CNXREALTY", "Nifty Energy": "^CNXENERGY", "Nifty Infra": "^CNXINFRA", 
+    "Nifty PSU Bank": "^CNXPSUBANK", "Nifty Pvt Bank": "^PVTBANK", "Nifty Media": "^CNXMEDIA", 
+    "Nifty PSE": "^CPSE", "Nifty Fin Service": "^CNXFINANCE", "Nifty Service": "^CNXSERVICE", 
+    "Nifty Commodities": "^CNXCOMMODITIES", "Nifty Consumption": "^CNXCONSUMPTION", 
+    "Nifty Healthcare": "^CNXHEALTHCARE", "Nifty Oil & Gas": "^CNXOILGAS", 
+    "Nifty Mfg": "MAKEINDIA.NS", "Nifty Defence": "DEFENCE.NS", "Nifty MNC": "MNC.NS"
 }
 
 GLOBAL_MARKETS = {
