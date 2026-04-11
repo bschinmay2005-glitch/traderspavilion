@@ -112,17 +112,20 @@ GLOBAL_MARKETS = {
 
 # --- 4. CONFIGURATIONS (Updated with PSU, PSE, Energy, and Defence) ---
 INDIA_SECTORS = {
-    "Bank Nifty": "^NSEBANK",       # Corrected from Nifty Bank
+    "Bank Nifty": "^NSEBANK",
     "Nifty PSU Bank": "^CNXPSUBANK",
+    "Nifty Pvt Bank": "^PVTBANK",
     "Nifty PSE": "^CPSE",
     "Nifty Energy": "^CNXENERGY",
-    "Nifty India Defence": "DEFENCE.NS", # Identifying it as the specific index ETF
     "Nifty IT": "^CNXIT",
     "Nifty Auto": "^CNXAUTO",
     "Nifty FMCG": "^CNXFMCG",
     "Nifty Metal": "^CNXMETAL",
     "Nifty Pharma": "^CNXPHARMA",
-    "Nifty Realty": "^CNXREALTY"
+    "Nifty Realty": "^CNXREALTY",
+    "Nifty Healthcare": "^CNXHEALTHCARE",
+    "Nifty Oil & Gas": "^CNXOILGAS",
+    "Nifty India Defence": "DEFENCE.NS"
 }
 
 # --- 5. SIDEBAR ---
@@ -144,7 +147,8 @@ if market_choice == "India":
         with cols[idx % 4]:
             color = "change-pos" if item['change'] >= 0 else "change-neg"
             icon = "▲" if item['change'] >= 0 else "▼"
-            url = f"https://www.tradingview.com/symbols/NSE-{item['symbol'].replace('^', '')}"
+            tv_id = TV_MAP.get(item['symbol'], item['symbol'].replace('^', ''))
+            url = f"https://www.tradingview.com/symbols/{tv_id}"
             st.markdown(f"""
                 <a href="{url}" target="_blank" style="text-decoration:none">
                     <div class="market-card">
@@ -166,7 +170,8 @@ else:
                     color = "change-pos" if item['change'] >= 0 else "change-neg"
                     icon = "▲" if item['change'] >= 0 else "▼"
                     clean_sym = item['symbol'].replace('^', '').replace('=F', '').replace('=X', '')
-                    url = f"https://www.tradingview.com/symbols/{clean_sym}"
+                    tv_id = TV_MAP.get(item['symbol'], item['symbol'].replace('^', '').replace('=F', '').replace('=X', ''))
+                    url = f"https://www.tradingview.com/symbols/{tv_id}"
                     st.markdown(f"""
                         <a href="{url}" target="_blank" style="text-decoration:none">
                             <div class="market-card">
