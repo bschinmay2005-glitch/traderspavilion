@@ -111,20 +111,29 @@ GLOBAL_MARKETS = {
 }
 
 # --- 4. CONFIGURATIONS (Updated with PSU, PSE, Energy, and Defence) ---
+# --- 4. CONFIGURATIONS (Full 22 Sectors) ---
 INDIA_SECTORS = {
     "Bank Nifty": "^NSEBANK",
     "Nifty PSU Bank": "^CNXPSUBANK",
     "Nifty Pvt Bank": "^PVTBANK",
-    "Nifty PSE": "^CPSE",
-    "Nifty Energy": "^CNXENERGY",
     "Nifty IT": "^CNXIT",
     "Nifty Auto": "^CNXAUTO",
     "Nifty FMCG": "^CNXFMCG",
     "Nifty Metal": "^CNXMETAL",
     "Nifty Pharma": "^CNXPHARMA",
     "Nifty Realty": "^CNXREALTY",
+    "Nifty Media": "^CNXMEDIA",
+    "Nifty Energy": "^CNXENERGY",
+    "Nifty Infra": "^CNXINFRA",
+    "Nifty Fin Service": "^CNXFINANCE",
+    "Nifty Commodities": "^CNXCOMMODITIES",
+    "Nifty Consumption": "^CNXCONSUMPTION",
+    "Nifty Services": "^CNXSERVICE",
+    "Nifty Cons Durbl": "^CNXCONSDURABL",
     "Nifty Healthcare": "^CNXHEALTHCARE",
     "Nifty Oil & Gas": "^CNXOILGAS",
+    "NIFTY India Mfg": "^CNXMFG",
+    "Nifty PSE": "^CPSE",
     "Nifty India Defence": "DEFENCE.NS"
 }
 
