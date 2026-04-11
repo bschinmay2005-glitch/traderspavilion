@@ -87,7 +87,7 @@ from datetime import datetime, timedelta
 
 # --- 1. PAGE CONFIG & THEME ---
 st.set_page_config(
-    page_title="Pro-Market Terminal",
+    page_title="traderspavilion",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed"
