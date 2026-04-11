@@ -34,60 +34,47 @@ st.markdown("""
 @st.cache_data(ttl=30)
 def fetch_data(symbols_dict, timeframe):
     data_list = []
-
     for name, sym in symbols_dict.items():
         try:
             t = yf.Ticker(sym)
-            df = t.history(period="7d" if timeframe in ["1d", "5d"] else timeframe)
-
+            # Use 7d buffer to avoid weekend/holiday gaps where Yahoo returns empty data
+            df = t.history(period="7d")
             if not df.empty:
                 current_price = df['Close'].iloc[-1]
                 prev_price = df['Close'].iloc[-2] if timeframe == "1d" else df['Close'].iloc[0]
                 change = ((current_price - prev_price) / prev_price) * 100
-            else:
-                current_price = 0
-                change = 0
-
-            data_list.append({
-                "name": name,
-                "symbol": sym,
-                "price": current_price,
-                "change": change
-            })
-
-        except Exception as e:
-            data_list.append({
-                "name": name,
-                "symbol": sym,
-                "price": 0,
-                "change": 0
-            })
-
+                data_list.append({"name": name, "symbol": sym, "price": current_price, "change": change})
+        except: continue
     return data_list
 
-# --- 4. CONFIGURATIONS ---
+# --- 4. CONFIGURATIONS (VERIFIED TICKERS) ---
 INDIA_SECTORS = {
-    "Nifty IT": "^CNXIT", "Nifty Pharma": "^CNXPHARMA", 
+    "Nifty Bank": "^NSEBANK", "Nifty IT": "^CNXIT", "Nifty Pharma": "^CNXPHARMA", 
     "Nifty Auto": "^CNXAUTO", "Nifty Metal": "^CNXMETAL", "Nifty FMCG": "^CNXFMCG", 
     "Nifty Realty": "^CNXREALTY", "Nifty Energy": "^CNXENERGY", "Nifty Infra": "^CNXINFRA", 
     "Nifty PSU Bank": "^CNXPSUBANK", "Nifty Pvt Bank": "^PVTBANK", "Nifty Media": "^CNXMEDIA", 
     "Nifty PSE": "^CPSE", "Nifty Fin Service": "^CNXFINANCE", "Nifty Service": "^CNXSERVICE", 
     "Nifty Commodities": "^CNXCOMMODITIES", "Nifty Consumption": "^CNXCONSUMPTION", 
-    "Nifty Healthcare": "^NIFTY_HEALTHCARE", "Nifty Oil & Gas": "^NIFTY_OIL_AND_GAS", 
-    "Nifty Mfg": "^NIFTY_INDIA_MFG", "Nifty India Defence": "^NIFTY_IND_DEFENCE"
+    "Nifty Healthcare": "^CNXHEALTHCARE", "Nifty Oil & Gas": "^CNXOILGAS", 
+    "Nifty Mfg": "MAKEINDIA.NS", "Nifty Defence": "DEFENCE.NS", "Nifty MNC": "MNC.NS"
 }
 
 GLOBAL_MARKETS = {
-    "Indices": {"Nifty 50": "^NSEI", "S&P 500": "^GSPC", "Nasdaq 100": "^IXIC", "DAX": "^GDAXI", "FTSE 100": "^FTSE"},
-    "Commodities": {"Gold": "GC=F", "Silver": "SI=F", "Crude Oil": "CL=F", "Natural Gas": "NG=F"},
-    "Forex": {"USD/INR": "USDINR=X", "EUR/USD": "EURUSD=X", "GBP/USD": "GBPUSD=X"}
+    "Indices": {"Nifty 50": "^NSEI", "S&P 500": "^GSPC", "Nasdaq 100": "^IXIC", "DAX 40": "^GDAXI"},
+    "Commodities": {"Gold": "GC=F", "Silver": "SI=F", "Crude Oil": "CL=F"},
+    "Forex": {"USD/INR": "USDINR=X", "EUR/USD": "EURUSD=X"}
 }
 
 TV_MAP = {
     "^NSEI": "NSE:NIFTY", "^NSEBANK": "NSE:BANKNIFTY", "^CNXIT": "NSE:CNXIT",
     "^CNXPHARMA": "NSE:CNXPHARMA", "^CNXAUTO": "NSE:CNXAUTO", "^CNXMETAL": "NSE:CNXMETAL",
-    "HEALTHY.NS": "NSE:CNXHEALTHCARE", "OIL.NS": "NSE:CNXOILGAS", "MAKEINDIA.NS": "NSE:CNXMANUFACTURING",
-    "NIFTY_INDIA_DEFENCE": "NSE:DEFENCE", "USDINR=X": "FX_IDC:USDINR", "GC=F": "COMEX:GC1!"
+    "^CNXFMCG": "NSE:CNXFMCG", "^CNXREALTY": "NSE:CNXREALTY", "^CNXENERGY": "NSE:CNXENERGY",
+    "^CNXINFRA": "NSE:CNXINFRA", "^CNXPSUBANK": "NSE:CNXPSUBANK", "^PVTBANK": "NSE:NIFTY_PVT_BANK",
+    "^CNXMEDIA": "NSE:CNXMEDIA", "^CPSE": "NSE:CPSE", "^CNXFINANCE": "NSE:CNXFINANCE",
+    "^CNXSERVICE": "NSE:CNXSERVICE", "^CNXCOMMODITIES": "NSE:CNXCOMMODITIES",
+    "^CNXCONSUMPTION": "NSE:CNXCONSUMPTION", "^CNXHEALTHCARE": "NSE:CNXHEALTHCARE",
+    "^CNXOILGAS": "NSE:CNXOILGAS", "MAKEINDIA.NS": "NSE:CNXMANUFACTURING", 
+    "DEFENCE.NS": "NSE:DEFENCE", "MNC.NS": "NSE:CNXMNC"
 }
 
 # --- 5. SIDEBAR ---
@@ -109,11 +96,16 @@ if market_view == "India Sectors":
         with cols[i % 4]:
             color = "change-pos" if item['change'] >= 0 else "change-neg"
             arrow = "▲" if item['change'] >= 0 else "▼"
-            tv_id = TV_MAP.get(item['symbol'], item['symbol'].replace('^', '').replace('.NS', '').replace('=F', ''))
+            tv_id = TV_MAP.get(item['symbol'], item['symbol'].replace('^', '').replace('.NS', ''))
             url = f"https://www.tradingview.com/symbols/{tv_id}"
-            st.markdown(f"""<a href="{url}" target="_blank" style="text-decoration:none"><div class="market-card">
-                <div class="symbol-name">{item['name']}</div><div class="price">{item['price']:,.2f}</div>
-                <div class="{color}">{arrow} {abs(item['change']):.2f}%</div></div></a>""", unsafe_allow_html=True)
+            st.markdown(f"""
+                <a href="{url}" target="_blank" style="text-decoration:none">
+                    <div class="market-card">
+                        <div class="symbol-name">{item['name']}</div>
+                        <div class="price">{item['price']:,.2f}</div>
+                        <div class="{color}">{arrow} {abs(item['change']):.2f}%</div>
+                    </div>
+                </a>""", unsafe_allow_html=True)
 
 else:
     st.title("🌍 Global Market Watch")
@@ -126,10 +118,11 @@ else:
                 with cols[i % 4]:
                     color = "change-pos" if item['change'] >= 0 else "change-neg"
                     arrow = "▲" if item['change'] >= 0 else "▼"
-                    tv_id = TV_MAP.get(item['symbol'], item['symbol'].replace('^', '').replace('=F', '').replace('=X', ''))
-                    url = f"https://www.tradingview.com/symbols/{tv_id}"
-                    st.markdown(f"""<a href="{url}" target="_blank" style="text-decoration:none"><div class="market-card">
-                        <div class="symbol-name">{item['name']}</div><div class="price">{item['price']:,.2f}</div>
-                        <div class="{color}">{arrow} {abs(item['change']):.2f}%</div></div></a>""", unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div class="market-card">
+                            <div class="symbol-name">{item['name']}</div>
+                            <div class="price">{item['price']:,.2f}</div>
+                            <div class="{color}">{arrow} {abs(item['change']):.2f}%</div>
+                        </div>""", unsafe_allow_html=True)
 
-st.caption(f"Last Refreshed: {datetime.now().strftime('%H:%M:%S')}")
+st.caption(f"Last updated: {datetime.now().strftime('%H:%M:%S')} | Total Loaded: {len(data)}")
