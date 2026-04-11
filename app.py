@@ -82,7 +82,7 @@ def fetch_realtime_data(api_instance):
 
 # --- 6. SIDEBAR & LOGIN ---
 with st.sidebar:
-    st.markdown("# traders<span style='color:#22c55e'>pavilion</span> ⚡")
+    st.sidebar.markdown("# traders<span style='color:#22c55e'>pavilion</span> ⚡", unsafe_allow_html=True)
     st.caption("REAL-TIME BROKER FEED")
     st.divider()
     
