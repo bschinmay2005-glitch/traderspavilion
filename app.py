@@ -46,25 +46,33 @@ def fetch_data(symbols_dict, timeframe):
                 data_list.append({"name": name, "symbol": sym, "price": current_price, "change": change})
         except: continue
     return data_list
-
-# --- 4. CONFIGURATIONS (VERIFIED TICKERS) ---
+# --- 4. CONFIGURATIONS (VERIFIED YAHOO TICKERS) ---
 INDIA_SECTORS = {
-    "Nifty Bank": "^NSEBANK", "Nifty IT": "^CNXIT", "Nifty Pharma": "^CNXPHARMA", 
-    "Nifty Auto": "^CNXAUTO", "Nifty Metal": "^CNXMETAL", "Nifty FMCG": "^CNXFMCG", 
-    "Nifty Realty": "^CNXREALTY", "Nifty Energy": "^CNXENERGY", "Nifty Infra": "^CNXINFRA", 
-    "Nifty PSU Bank": "^CNXPSUBANK", "Nifty Pvt Bank": "^PVTBANK", "Nifty Media": "^CNXMEDIA", 
-    "Nifty PSE": "^CPSE", "Nifty Fin Service": "^CNXFINANCE", "Nifty Service": "^CNXSERVICE", 
-    "Nifty Commodities": "^CNXCOMMODITIES", "Nifty Consumption": "^CNXCONSUMPTION", 
-    "Nifty Healthcare": "^NIFTY_HEALTHCARE", "Nifty Oil & Gas": "^NIFTY_OIL_AND_GAS", 
-    "Nifty Mfg": "NIFTY_INDIA_MFG", "Nifty Defence": "NIFTY_IND_DEFENCE", "Nifty MNC": "MNC.NS"
+    "Nifty Bank": "^NSEBANK", 
+    "Nifty IT": "^CNXIT", 
+    "Nifty Pharma": "^CNXPHARMA", 
+    "Nifty Auto": "^CNXAUTO", 
+    "Nifty Metal": "^CNXMETAL", 
+    "Nifty FMCG": "^CNXFMCG", 
+    "Nifty Realty": "^CNXREALTY", 
+    "Nifty Energy": "^CNXENERGY", 
+    "Nifty Infra": "^CNXINFRA", 
+    "Nifty PSU Bank": "^CNXPSUBANK", 
+    "Nifty Pvt Bank": "^PVTBANK", 
+    "Nifty Media": "^CNXMEDIA", 
+    "Nifty PSE": "^CPSE", 
+    "Nifty Fin Service": "^CNXFINANCE", 
+    "Nifty Service": "^CNXSERVICE", 
+    "Nifty Commodities": "^CNXCOMMODITIES", 
+    "Nifty Consumption": "^CNXCONSUMPTION", 
+    "Nifty Healthcare": "^CNXHEALTHCARE", 
+    "Nifty Oil & Gas": "^CNXOILGAS", 
+    "Nifty Mfg": "MAKEINDIA.NS", 
+    "Nifty Defence": "DEFENCE.NS", 
+    "Nifty MNC": "MNC.NS"
 }
 
-GLOBAL_MARKETS = {
-    "Indices": {"Nifty 50": "^NSEI", "S&P 500": "^GSPC", "Nasdaq 100": "^IXIC", "DAX 40": "^GDAXI"},
-    "Commodities": {"Gold": "GC=F", "Silver": "SI=F", "Crude Oil": "CL=F"},
-    "Forex": {"USD/INR": "USDINR=X", "EUR/USD": "EURUSD=X"}
-}
-
+# --- 3. MASTER MAPPING (TV) ---
 TV_MAP = {
     "^NSEI": "NSE:NIFTY", "^NSEBANK": "NSE:BANKNIFTY", "^CNXIT": "NSE:CNXIT",
     "^CNXPHARMA": "NSE:CNXPHARMA", "^CNXAUTO": "NSE:CNXAUTO", "^CNXMETAL": "NSE:CNXMETAL",
@@ -75,6 +83,12 @@ TV_MAP = {
     "^CNXCONSUMPTION": "NSE:CNXCONSUMPTION", "^CNXHEALTHCARE": "NSE:CNXHEALTHCARE",
     "^CNXOILGAS": "NSE:CNXOILGAS", "MAKEINDIA.NS": "NSE:CNXMANUFACTURING", 
     "DEFENCE.NS": "NSE:DEFENCE", "MNC.NS": "NSE:CNXMNC"
+}
+
+GLOBAL_MARKETS = {
+    "Indices": {"Nifty 50": "^NSEI", "S&P 500": "^GSPC", "Nasdaq 100": "^IXIC", "DAX 40": "^GDAXI"},
+    "Commodities": {"Gold": "GC=F", "Silver": "SI=F", "Crude Oil": "CL=F"},
+    "Forex": {"USD/INR": "USDINR=X", "EUR/USD": "EURUSD=X"}
 }
 
 # --- 5. SIDEBAR ---
