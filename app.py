@@ -38,11 +38,6 @@ def fetch_data(symbols_dict, timeframe):
         try:
             t = yf.Ticker(sym)
             df = t.history(period="7d" if timeframe in ["1d", "5d"] else timeframe)
-            for name, sym in symbols_dict.items():
-    try:
-        t = yf.Ticker(sym)
-        df = t.history(period="7d" if timeframe in ["1d", "5d"] else timeframe)
-
         if not df.empty:
             current_price = df['Close'].iloc[-1]
             prev_price = df['Close'].iloc[-2] if timeframe == "1d" else df['Close'].iloc[0]
