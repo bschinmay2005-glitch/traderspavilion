@@ -48,14 +48,14 @@ def fetch_data(symbols_dict, timeframe):
 
 # --- 4. CONFIGURATIONS ---
 INDIA_SECTORS = {
-    "Bank Nifty": "^NSEBANK", "Nifty IT": "^CNXIT", "Nifty Pharma": "^CNXPHARMA", 
+    "Nifty IT": "^CNXIT", "Nifty Pharma": "^CNXPHARMA", 
     "Nifty Auto": "^CNXAUTO", "Nifty Metal": "^CNXMETAL", "Nifty FMCG": "^CNXFMCG", 
     "Nifty Realty": "^CNXREALTY", "Nifty Energy": "^CNXENERGY", "Nifty Infra": "^CNXINFRA", 
     "Nifty PSU Bank": "^CNXPSUBANK", "Nifty Pvt Bank": "^PVTBANK", "Nifty Media": "^CNXMEDIA", 
     "Nifty PSE": "^CPSE", "Nifty Fin Service": "^CNXFINANCE", "Nifty Service": "^CNXSERVICE", 
     "Nifty Commodities": "^CNXCOMMODITIES", "Nifty Consumption": "^CNXCONSUMPTION", 
     "Nifty Healthcare": "HEALTHY.NS", "Nifty Oil & Gas": "OIL.NS", 
-    "Nifty Mfg": "MAKEINDIA.NS", "Nifty Defence": "DEFENCE.NS", "Nifty MNC": "MNC.NS"
+    "Nifty Mfg": "MAKEINDIA.NS", "Nifty India Defence": "NIFTY_INDIA_DEFENCE", "Nifty MNC": "MNC.NS"
 }
 
 GLOBAL_MARKETS = {
