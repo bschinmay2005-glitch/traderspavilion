@@ -3,140 +3,117 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime
 
-# --- 1. PAGE CONFIG & THEME ---
+# --- 1. PAGE CONFIG ---
 st.set_page_config(
     page_title="traderspavilion",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # --- 2. GLASSMORPHISM CSS ---
-def local_css():
-    st.markdown("""
-        <style>
-        .stApp {
-            background: radial-gradient(circle at top left, #1a1c2c, #4a192c);
-        }
-        .market-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            transition: transform 0.3s ease;
-            cursor: pointer;
-            text-decoration: none !important;
-            display: block;
-            margin-bottom: 20px;
-        }
-        .market-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .symbol-name { font-size: 0.9rem; color: #888ea8; font-weight: 600; margin-bottom: 5px; }
-        .price { font-size: 1.4rem; font-weight: 700; color: white; }
-        .change-pos { color: #00ff88; font-size: 0.85rem; }
-        .change-neg { color: #ff3b3b; font-size: 0.85rem; }
-        </style>
+st.markdown("""
+    <style>
+    .stApp { background: radial-gradient(circle at top left, #1a1c2c, #4a192c); }
+    .market-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        transition: transform 0.3s ease;
+        text-decoration: none !important;
+        display: block;
+        margin-bottom: 20px;
+    }
+    .market-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); }
+    .symbol-name { font-size: 0.9rem; color: #888ea8; font-weight: 600; margin-bottom: 5px; }
+    .price { font-size: 1.4rem; font-weight: 700; color: white; }
+    .change-pos { color: #00ff88; font-size: 0.85rem; }
+    .change-neg { color: #ff3b3b; font-size: 0.85rem; }
+    </style>
     """, unsafe_allow_html=True)
-
-local_css()
 
 # --- 3. DATA ENGINE ---
 @st.cache_data(ttl=60)
-def fetch_market_data(symbols, period="1d"):
+def fetch_data(symbols_dict, period):
     data_list = []
-    for name, sym in symbols.items():
+    for name, sym in symbols_dict.items():
         try:
             ticker = yf.Ticker(sym)
             hist = ticker.history(period=period)
             if not hist.empty:
-                current_price = hist['Close'].iloc[-1]
-                prev_price = hist['Close'].iloc[0]
-                pct_change = ((current_price - prev_price) / prev_price) * 100
-                data_list.append({
-                    "name": name,
-                    "symbol": sym,
-                    "price": current_price,
-                    "change": pct_change
-                })
-        except:
-            continue
+                curr = hist['Close'].iloc[-1]
+                prev = hist['Close'].iloc[0]
+                chg = ((curr - prev) / prev) * 100
+                data_list.append({"name": name, "symbol": sym, "price": curr, "change": chg})
+        except: continue
     return data_list
 
-# --- 4. CONFIGURATION ---
-MARKETS = {
-    "Global Indices": {
-        "Nifty 50": "^NSEI",
-        "S&P 500": "^GSPC",
-        "Nasdaq 100": "^IXIC",
-        "DAX 40": "^GDAXI",
-        "Nikkei 225": "^N225"
-    },
-    "Commodities": {
-        "Gold": "GC=F",
-        "Silver": "SI=F",
-        "Crude Oil": "CL=F",
-        "Copper": "HG=F",       # Added Copper
-        "Steel": "HRC=F",       # Added US Midwest Domestic Hot-Rolled Coil Steel
-        "Lithium (LIT)": "LIT",  # Added Lithium Proxy (ETF)
-        "Natural Gas": "NG=F"
-    },
-    "Forex": {
-        "USD/INR": "USDINR=X",
-        "EUR/USD": "EURUSD=X"
-    }
+# --- 4. CONFIGURATIONS ---
+GLOBAL_MARKETS = {
+    "Global Indices": {"Nifty 50": "^NSEI", "S&P 500": "^GSPC", "Nasdaq 100": "^IXIC", "DAX 40": "^GDAXI", "FTSE 100": "^FTSE"},
+    "Commodities": {"Gold": "GC=F", "Silver": "SI=F", "Copper": "HG=F", "Steel": "HRC=F", "Lithium (LIT)": "LIT", "Crude Oil": "CL=F"},
+    "Forex": {"USD/INR": "USDINR=X", "EUR/USD": "EURUSD=X", "GBP/USD": "GBPUSD=X"}
 }
 
-# --- 5. UI LAYOUT ---
-st.markdown("# traders<span style='color:#22c55e'>pavilion</span>", unsafe_allow_html=True)
+INDIA_SECTORS = {
+    "Nifty Bank": "^NSEBANK", "Nifty IT": "^CNXIT", "Nifty Auto": "^CNXAUTO", 
+    "Nifty FMCG": "^CNXFMCG", "Nifty Metal": "^CNXMETAL", "Nifty Pharma": "^CNXPHARMA", 
+    "Nifty Realty": "^CNXREALTY", "Nifty Media": "^CNXMEDIA", "Nifty Energy": "^CNXENERGY"
+}
 
-timeframe = st.select_slider(
-    "Select Performance Timeframe",
-    options=["1d", "5d", "1mo", "1y"],
-    value="1d"
-)
+# --- 5. SIDEBAR ---
+with st.sidebar:
+    st.markdown("# traders<span style='color:#22c55e'>pavilion</span>", unsafe_allow_html=True)
+    st.divider()
+    market_choice = st.selectbox("Market Type", ["India", "Global Markets"])
+    timeframe = st.select_slider("Timeframe", options=["1d", "5d", "1mo", "1y"], value="1d")
+    if st.button("🔄 Refresh"):
+        st.cache_data.clear()
+        st.rerun()
 
-tabs = st.tabs(list(MARKETS.keys()))
-
-for i, category in enumerate(MARKETS.keys()):
-    with tabs[i]:
-        market_data = fetch_market_data(MARKETS[category], period=timeframe)
-        cols = st.columns(4)
-        
-        for idx, item in enumerate(market_data):
-            col_idx = idx % 4
-            color_class = "change-pos" if item['change'] >= 0 else "change-neg"
-            arrow = "▲" if item['change'] >= 0 else "▼"
-            
-            tv_symbol = item['symbol'].replace('^', '').replace('=F', '').replace('=X', '')
-            url = f"https://www.tradingview.com/symbols/{tv_symbol}"
-            
-            card_html = f"""
-                <a href="{url}" target="_blank" style="text-decoration: none;">
+# --- 6. MAIN DISPLAY ---
+if market_choice == "India":
+    st.title("🇮🇳 Indian Sectoral Velocity")
+    data = fetch_data(INDIA_SECTORS, timeframe)
+    cols = st.columns(4)
+    for idx, item in enumerate(data):
+        with cols[idx % 4]:
+            color = "change-pos" if item['change'] >= 0 else "change-neg"
+            icon = "▲" if item['change'] >= 0 else "▼"
+            url = f"https://www.tradingview.com/symbols/NSE-{item['symbol'].replace('^', '')}"
+            st.markdown(f"""
+                <a href="{url}" target="_blank" style="text-decoration:none">
                     <div class="market-card">
                         <div class="symbol-name">{item['name']}</div>
-                        <div class="price">${item['price']:,.2f}</div>
-                        <div class="{color_class}">
-                            {arrow} {abs(item['change']):.2f}% ({timeframe})
-                        </div>
+                        <div class="price">{item['price']:,.2f}</div>
+                        <div class="{color}">{icon} {abs(item['change']):.2f}%</div>
                     </div>
-                </a>
-            """
-            cols[col_idx].markdown(card_html, unsafe_allow_html=True)
+                </a>""", unsafe_allow_html=True)
 
-# --- 6. FOOTER & DATA TABLE ---
-st.divider()
-with st.expander("View Detailed Raw Data"):
-    # Combine all data for the table
-    all_data = []
-    for cat in MARKETS:
-        all_data.extend(fetch_market_data(MARKETS[cat], period=timeframe))
-    df = pd.DataFrame(all_data)
-    if not df.empty:
-        st.dataframe(df[["name", "price", "change"]], use_container_width=True)
+else:
+    st.title("🌍 Global Market Monitor")
+    tabs = st.tabs(list(GLOBAL_MARKETS.keys()))
+    for i, cat in enumerate(GLOBAL_MARKETS.keys()):
+        with tabs[i]:
+            data = fetch_data(GLOBAL_MARKETS[cat], timeframe)
+            cols = st.columns(4)
+            for idx, item in enumerate(data):
+                with cols[idx % 4]:
+                    color = "change-pos" if item['change'] >= 0 else "change-neg"
+                    icon = "▲" if item['change'] >= 0 else "▼"
+                    clean_sym = item['symbol'].replace('^', '').replace('=F', '').replace('=X', '')
+                    url = f"https://www.tradingview.com/symbols/{clean_sym}"
+                    st.markdown(f"""
+                        <a href="{url}" target="_blank" style="text-decoration:none">
+                            <div class="market-card">
+                                <div class="symbol-name">{item['name']}</div>
+                                <div class="price">{item['price']:,.2f}</div>
+                                <div class="{color}">{icon} {abs(item['change']):.2f}%</div>
+                            </div>
+                        </a>""", unsafe_allow_html=True)
 
-st.caption(f"Last updated: {datetime.now().strftime('%H:%M:%S')} | Data: Yahoo Finance")
+st.caption(f"Last Refreshed: {datetime.now().strftime('%H:%M:%S')}")
