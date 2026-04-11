@@ -185,7 +185,7 @@ MARKETS = {
 }
 
 # --- 5. UI LAYOUT ---
-st.title("Real-Time Market Bar")
+st.title("traderspavilion")
 
 # Timeframe Selector
 timeframe = st.select_slider(
