@@ -73,12 +73,17 @@ MARKETS = {
         "Nifty 50": "^NSEI",
         "S&P 500": "^GSPC",
         "Nasdaq 100": "^IXIC",
+        "DAX 40": "^GDAXI",
         "Nikkei 225": "^N225"
     },
     "Commodities": {
         "Gold": "GC=F",
         "Silver": "SI=F",
-        "Crude Oil": "CL=F"
+        "Crude Oil": "CL=F",
+        "Copper": "HG=F",       # Added Copper
+        "Steel": "HRC=F",       # Added US Midwest Domestic Hot-Rolled Coil Steel
+        "Lithium (LIT)": "LIT",  # Added Lithium Proxy (ETF)
+        "Natural Gas": "NG=F"
     },
     "Forex": {
         "USD/INR": "USDINR=X",
