@@ -3,48 +3,6 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime
 
-# --- MASTER TRADINGVIEW MAPPING ---
-TV_MAP = {
-    "^NSEI": "NSE:NIFTY",
-    "^NSEBANK": "NSE:BANKNIFTY",
-    "^CNXPSUBANK": "NSE:CNXPSUBANK",
-    "^PVTBANK": "NSE:NIFTY_PVT_BANK",
-    "^CNXFINANCE": "NSE:CNXFINANCE",
-    "^CNXIT": "NSE:CNXIT",
-    "^CNXAUTO": "NSE:CNXAUTO",
-    "^CNXFMCG": "NSE:CNXFMCG",
-    "^CNXMETAL": "NSE:CNXMETAL",
-    "^CNXPHARMA": "NSE:CNXPHARMA",
-    "^CNXREALTY": "NSE:CNXREALTY",
-    "^CNXMEDIA": "NSE:CNXMEDIA",
-    "^CNXENERGY": "NSE:CNXENERGY",
-    "^CNXINFRA": "NSE:CNXINFRA",
-    "^CPSE": "NSE:CPSE",
-    "^CNXCOMMODITIES": "NSE:CNXCOMMODITIES",
-    "^CNXCONSUMPTION": "NSE:CNXCONSUMPTION",
-    "^CNXSERVICE": "NSE:CNXSERVICE",
-    "NIFTY_CONSR_DURBL.NS": "NSE:CNXCONSDURABLE",
-    "^CNXHEALTHCARE": "NSE:CNXHEALTHCARE",
-    "^CNXOILGAS": "NSE:CNXOILGAS",
-    "NIFTY_INDIA_MFG.NS": "NSE:CNXMANUFACTURING",
-    "DEFENCE.NS": "NSE:DEFENCE",
-    "^GSPC": "INDEX:SPX",
-    "^IXIC": "NASDAQ:IXIC",
-    "^GDAXI": "XETR:DAX",
-    "^FTSE": "INDEX:UKX",
-    "^N225": "TSE:NI225",
-    "GC=F": "COMEX:GC1!",
-    "SI=F": "COMEX:SI1!",
-    "HG=F": "COMEX:HG1!",
-    "CL=F": "NYMEX:CL1!",
-    "NG=F": "NYMEX:NG1!",
-    "HRC=F": "NYMEX:HRC1!",
-    "LIT": "AMEX:LIT",
-    "USDINR=X": "FX_IDC:USDINR",
-    "EURUSD=X": "FX:EURUSD",
-    "GBPUSD=X": "FX:GBPUSD"
-}
-
 # --- 1. PAGE CONFIG ---
 st.set_page_config(page_title="traderspavilion", page_icon="📈", layout="wide")
 
@@ -65,111 +23,108 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .market-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); }
-    .symbol-name { font-size: 0.85rem; color: #888ea8; font-weight: 600; margin-bottom: 5px; }
-    .price { font-size: 1.2rem; font-weight: 700; color: white; }
-    .change-pos { color: #00ff88; font-size: 0.8rem; }
-    .change-neg { color: #ff3b3b; font-size: 0.8rem; }
+    .symbol-name { font-size: 0.8rem; color: #888ea8; font-weight: 600; text-transform: uppercase; }
+    .price { font-size: 1.2rem; font-weight: 700; color: white; margin: 5px 0; }
+    .change-pos { color: #00ff88; font-size: 0.85rem; font-weight: bold; }
+    .change-neg { color: #ff3b3b; font-size: 0.85rem; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. DATA ENGINE ---
-@st.cache_data(ttl=60)
-def fetch_data(symbols_dict, period):
+# --- 3. MASTER MAPPING (TV) ---
+TV_MAP = {
+    "^NSEI": "NSE:NIFTY", "^NSEBANK": "NSE:BANKNIFTY", "^CNXIT": "NSE:CNXIT",
+    "^CNXPHARMA": "NSE:CNXPHARMA", "^CNXAUTO": "NSE:CNXAUTO", "^CNXMETAL": "NSE:CNXMETAL",
+    "^CNXFMCG": "NSE:CNXFMCG", "^CNXREALTY": "NSE:CNXREALTY", "^CNXENERGY": "NSE:CNXENERGY",
+    "^CNXINFRA": "NSE:CNXINFRA", "^CNXPSUBANK": "NSE:CNXPSUBANK", "^PVTBANK": "NSE:NIFTY_PVT_BANK",
+    "^CNXMEDIA": "NSE:CNXMEDIA", "^CPSE": "NSE:CPSE", "^CNXFINANCE": "NSE:CNXFINANCE",
+    "^CNXSERVICE": "NSE:CNXSERVICE", "^CNXCOMMODITIES": "NSE:CNXCOMMODITIES",
+    "^CNXCONSUMPTION": "NSE:CNXCONSUMPTION", "HEALTHY.NS": "NSE:CNXHEALTHCARE",
+    "OIL.NS": "NSE:CNXOILGAS", "MAKEINDIA.NS": "NSE:CNXMANUFACTURING", 
+    "DEFENCE.NS": "NSE:DEFENCE", "CONSUME.NS": "NSE:CNXCONSUMPTION"
+}
+
+# --- 4. DATA ENGINE (The Fix) ---
+@st.cache_data(ttl=30) # Reduced TTL for faster updates
+def fetch_data(symbols_dict, timeframe):
     data_list = []
+    # Fetching 7 days to ensure we always have data even over weekends
     for name, sym in symbols_dict.items():
         try:
-            ticker = yf.Ticker(sym)
-            hist = ticker.history(period="5d" if period == "1d" else period)
-            if not hist.empty:
-                curr = hist['Close'].iloc[-1]
-                prev = hist['Close'].iloc[0]
-                chg = ((curr - prev) / prev) * 100
-                data_list.append({"name": name, "symbol": sym, "price": curr, "change": chg})
+            t = yf.Ticker(sym)
+            df = t.history(period="7d")
+            if not df.empty:
+                current_price = df['Close'].iloc[-1]
+                # Dynamic change calculation based on timeframe slider
+                if timeframe == "1d":
+                    prev_price = df['Close'].iloc[-2]
+                elif timeframe == "5d":
+                    prev_price = df['Close'].iloc[0]
+                else: # Fallback for 1mo/1y (requires more data)
+                    df_long = t.history(period=timeframe)
+                    prev_price = df_long['Close'].iloc[0]
+                    current_price = df_long['Close'].iloc[-1]
+                
+                change = ((current_price - prev_price) / prev_price) * 100
+                data_list.append({"name": name, "symbol": sym, "price": current_price, "change": change})
         except: continue
     return data_list
 
-# --- 4. CONFIGURATIONS ---
-GLOBAL_MARKETS = {
-    "Global Indices": {"Nifty 50": "^NSEI", "S&P 500": "^GSPC", "Nasdaq 100": "^IXIC", "DAX 40": "^GDAXI", "FTSE 100": "^FTSE"},
-    "Commodities": {"Gold": "GC=F", "Silver": "SI=F", "Copper": "HG=F", "Steel": "HRC=F", "Lithium": "LIT", "Crude Oil": "CL=F"},
-    "Forex": {"USD/INR": "USDINR=X", "EUR/USD": "EURUSD=X", "GBP/USD": "GBPUSD=X"}
-}
-
+# --- 5. CONFIGURATIONS (The 22 Verified Tickers) ---
 INDIA_SECTORS = {
-    "Bank Nifty": "^NSEBANK",
-    "Nifty PSU Bank": "^CNXPSUBANK",
-    "Nifty Pvt Bank": "^PVTBANK",
-    "Nifty IT": "^CNXIT",
-    "Nifty Auto": "^CNXAUTO",
-    "Nifty FMCG": "^CNXFMCG",
-    "Nifty Metal": "^CNXMETAL",
-    "Nifty Pharma": "^CNXPHARMA",
-    "Nifty Realty": "^CNXREALTY",
-    "Nifty Media": "^CNXMEDIA",
-    "Nifty Energy": "^CNXENERGY",
-    "Nifty Infra": "^CNXINFRA",
-    "Nifty Fin Service": "^CNXFINANCE",
-    "Nifty Commodities": "^CNXCOMMODITIES",
-    "Nifty Consumption": "^CNXCONSUMPTION",
-    "Nifty Services": "^CNXSERVICE",
-    "Nifty Healthcare": "^CNXHEALTHCARE",
-    "Nifty Oil & Gas": "^CNXOILGAS",
-    "Nifty PSE": "^CPSE",
-    "Nifty Microcap 250": "^NIFTY_MICROCAP250", # Added
-    "Nifty Midcap 100": "^MZNifty",           # Added
-    "Nifty Smallcap 100": "^CNXSC",          # Added
-    "Nifty India Defence": "DEFENCE.NS"
+    "Nifty 50": "^NSEI", "Bank Nifty": "^NSEBANK", "Nifty IT": "^CNXIT",
+    "Nifty Pharma": "^CNXPHARMA", "Nifty Auto": "^CNXAUTO", "Nifty Metal": "^CNXMETAL",
+    "Nifty FMCG": "^CNXFMCG", "Nifty Realty": "^CNXREALTY", "Nifty Energy": "^CNXENERGY",
+    "Nifty Infra": "^CNXINFRA", "Nifty PSU Bank": "^CNXPSUBANK", "Nifty Pvt Bank": "^PVTBANK",
+    "Nifty Media": "^CNXMEDIA", "Nifty PSE": "^CPSE", "Nifty Fin Service": "^CNXFINANCE",
+    "Nifty Service": "^CNXSERVICE", "Nifty Commodities": "^CNXCOMMODITIES", 
+    "Nifty Consumption": "CONSUME.NS", "Nifty Healthcare": "HEALTHY.NS", 
+    "Nifty Oil & Gas": "OIL.NS", "Nifty Mfg": "MAKEINDIA.NS", "Nifty Defence": "DEFENCE.NS"
 }
 
-# --- 5. SIDEBAR ---
+GLOBAL_MARKETS = {
+    "Indices": {"S&P 500": "^GSPC", "Nasdaq 100": "^IXIC", "DAX": "^GDAXI"},
+    "Commodities": {"Gold": "GC=F", "Silver": "SI=F", "Crude Oil": "CL=F"},
+    "Forex": {"USD/INR": "USDINR=X", "EUR/USD": "EURUSD=X"}
+}
+
+# --- 6. SIDEBAR ---
 with st.sidebar:
     st.markdown("# traders<span style='color:#22c55e'>pavilion</span>", unsafe_allow_html=True)
     st.divider()
-    market_choice = st.selectbox("Market Type", ["India", "Global Markets"])
-    timeframe = st.select_slider("Timeframe", options=["1d", "5d", "1mo", "1y"], value="1d")
-    if st.button("🔄 Refresh"):
+    market_view = st.selectbox("Select Market", ["India", "Global Markets"])
+    time_slider = st.select_slider("Timeframe", options=["1d", "5d", "1mo", "1y"], value="1d")
+    if st.button("🔄 Force Refresh"):
         st.cache_data.clear()
         st.rerun()
 
-# --- 6. MAIN DISPLAY ---
-st.title(f"📊 {market_choice} Velocity")
+# --- 7. MAIN UI ---
+st.title(f"{market_view} Sectoral Watch")
+target_dict = INDIA_SECTORS if market_view == "India" else {}
 
-if market_choice == "India":
-    data = fetch_data(INDIA_SECTORS, timeframe)
-    cols = st.columns(4)
-    for idx, item in enumerate(data):
-        with cols[idx % 4]:
-            color = "change-pos" if item['change'] >= 0 else "change-neg"
-            icon = "▲" if item['change'] >= 0 else "▼"
-            tv_id = TV_MAP.get(item['symbol'], item['symbol'].replace('^', ''))
-            url = f"https://www.tradingview.com/symbols/{tv_id}"
-            st.markdown(f"""
-                <a href="{url}" target="_blank" style="text-decoration:none">
-                    <div class="market-card">
-                        <div class="symbol-name">{item['name']}</div>
-                        <div class="price">{item['price']:,.2f}</div>
-                        <div class="{color}">{icon} {abs(item['change']):.2f}%</div>
-                    </div>
-                </a>""", unsafe_allow_html=True)
-else:
-    tabs = st.tabs(list(GLOBAL_MARKETS.keys()))
-    for i, cat in enumerate(GLOBAL_MARKETS.keys()):
-        with tabs[i]:
-            data = fetch_data(GLOBAL_MARKETS[cat], timeframe)
-            cols = st.columns(4)
-            for idx, item in enumerate(data):
-                with cols[idx % 4]:
-                    color = "change-pos" if item['change'] >= 0 else "change-neg"
-                    icon = "▲" if item['change'] >= 0 else "▼"
-                    tv_id = TV_MAP.get(item['symbol'], item['symbol'].replace('^', '').replace('=F', '').replace('=X', ''))
-                    url = f"https://www.tradingview.com/symbols/{tv_id}"
-                    st.markdown(f"""
-                        <a href="{url}" target="_blank" style="text-decoration:none">
-                            <div class="market-card">
-                                <div class="symbol-name">{item['name']}</div>
-                                <div class="price">{item['price']:,.2f}</div>
-                                <div class="{color}">{icon} {abs(item['change']):.2f}%</div>
-                            </div>
-                        </a>""", unsafe_allow_html=True)
+if market_view == "Global Markets":
+    for sub in GLOBAL_MARKETS.values(): target_dict.update(sub)
 
-st.caption(f"Last updated: {datetime.now().strftime('%H:%M:%S')}")
+market_data = fetch_data(target_dict, time_slider)
+
+# GRID SYSTEM
+cols = st.columns(4)
+for i, item in enumerate(market_data):
+    with cols[i % 4]:
+        pos = item['change'] >= 0
+        color = "change-pos" if pos else "change-neg"
+        arrow = "▲" if pos else "▼"
+        
+        # Link Logic
+        tv_id = TV_MAP.get(item['symbol'], item['symbol'].replace('^', '').replace('.NS', ''))
+        url = f"https://www.tradingview.com/symbols/{tv_id}"
+        
+        st.markdown(f"""
+            <a href="{url}" target="_blank" style="text-decoration:none">
+                <div class="market-card">
+                    <div class="symbol-name">{item['name']}</div>
+                    <div class="price">{item['price']:,.2f}</div>
+                    <div class="{color}">{arrow} {abs(item['change']):.2f}%</div>
+                </div>
+            </a>""", unsafe_allow_html=True)
+
+st.caption(f"Update time: {datetime.now().strftime('%H:%M:%S')} | Total Sectors Loaded: {len(market_data)}")
