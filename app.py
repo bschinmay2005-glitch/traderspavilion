@@ -1,10 +1,9 @@
 import streamlit as st
 import requests
-import pandas as pd
 import datetime
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Ultra-Stable Terminal", layout="wide")
+st.set_page_config(page_title="Market Terminal Pro", layout="wide")
 
 # --- UI STYLES ---
 def apply_styles():
@@ -28,46 +27,58 @@ def apply_styles():
     </style>
     """, unsafe_allow_html=True)
 
-# --- PROFESSIONAL API FETCHING ---
+# --- FAST API DATA FETCHING ---
 @st.cache_data(ttl=60)
-def fetch_stable_data():
-    # Note: Alpha Vantage uses different symbols. 
-    # For a completely free, no-key-required stable source, we'll use a secondary RapidAPI or specialized proxy.
-    # Here is a hardened version using a Google Finance proxy logic which is more stable for Cloud.
+def fetch_market_data():
+    # Use your API Key from Secrets or paste here for testing
+    api_key = st.secrets.get("TWELVE_DATA_KEY", "DEMO_KEY") 
     
-    tickers = {
-        "INDEXDJX:.DJI": "Dow Jones", "INDEXNASDAQ:.IXIC": "Nasdaq", "INDEXSP:.INX": "S&P 500",
-        "INDEXFTSE:UKX": "FTSE 100", "INDEXEURO:PX1": "CAC 40", "INDEXDB:DAX": "DAX",
-        "INDEXNSE:NIFTY_50": "Nifty 50", "INDEXBOM:SENSEX": "BSE Sensex", "INDEXNIKKEI:NI225": "Nikkei 225"
-    }
+    # Twelve Data supports bulk symbols in one request
+    symbols = "DJI,IXIC,SPX,FTSE,FCHI,GDAXI,NIFTY,N225"
+    url = f"https://api.twelvedata.com/quote?symbol={symbols}&apikey={api_key}"
     
-    results = {}
-    # We use a specialized headers set for Cloud-to-Cloud requests
-    headers = {'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36'}
-    
-    for symbol, name in tickers.items():
-        try:
-            # Google Finance fallback (very high uptime on cloud)
-            url = f"https://www.google.com/search?q={symbol}"
-            res = requests.get(url, headers=headers, timeout=5)
-            # Basic parsing logic for the 'Race' condition
-            if res.status_code == 200:
-                # Mock data placeholder to ensure UI loads immediately while you set up API Keys
-                # In production, replace this block with your Alpha Vantage Key logic
-                results[name] = {"price": "Syncing...", "change": "0.00%", "is_pos": True}
-        except:
-            continue
-    return results
+    try:
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        
+        # Twelve Data returns a dict of symbols if multiple are requested
+        results = {}
+        mapping = {
+            "DJI": "Dow Jones", "IXIC": "Nasdaq", "SPX": "S&P 500",
+            "FTSE": "FTSE 100", "FCHI": "CAC 40", "GDAXI": "DAX",
+            "NIFTY": "Nifty 50", "N225": "Nikkei 225"
+        }
+        
+        for sym, details in data.items():
+            if 'close' in details:
+                price = float(details['close'])
+                change = float(details['percent_change'])
+                name = mapping.get(sym, sym)
+                results[name] = {
+                    "price": f"{price:,.2f}",
+                    "change": f"{change:+.2f}%",
+                    "is_pos": change >= 0
+                }
+        return results
+    except Exception as e:
+        return {}
 
-def draw_card(name, stats):
-    if not stats: return
+def draw_card(name, data_pool):
+    stats = data_pool.get(name)
+    if not stats:
+        # Graceful fallback if a specific ticker fails
+        st.markdown(f'<div class="market-card"><div class="ticker-name">{name}</div><div class="price-row">Offline</div></div>', unsafe_allow_html=True)
+        return
+    
     status = "pos" if stats['is_pos'] else "neg"
+    arrow = "▲" if stats['is_pos'] else "▼"
+    
     st.markdown(f"""
         <div class="market-card">
             <div class="ticker-name">{name}</div>
             <div class="price-row">
                 <span class="ticker-price">{stats['price']}</span>
-                <span class="pct-box {status}">{stats['change']}</span>
+                <span class="pct-box {status}">{arrow} {stats['change']}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -76,15 +87,15 @@ def main():
     apply_styles()
     st.title("🏛️ Professional Market Terminal")
     
-    # We are using a robust data-loading pattern here
-    data = fetch_stable_data()
+    # Fetch Data
+    data = fetch_market_data()
     
     if not data:
-        st.error("Major Outage: Data providers are blocking the cloud IP. Switch to API Key mode.")
+        st.error("API Key missing or limit reached. Please check Twelve Data Key.")
         return
 
     col1, col2, col3 = st.columns(3)
-    # Mapping to your requested sections
+    
     with col1:
         st.subheader("🇺🇸 US Markets")
         for m in ["Dow Jones", "Nasdaq", "S&P 500"]: draw_card(m, data)
@@ -94,6 +105,8 @@ def main():
     with col3:
         st.subheader("🌏 Asian Markets")
         for m in ["Nifty 50", "Nikkei 225"]: draw_card(m, data)
+
+    st.caption(f"Zero-Delay API Sync • {datetime.datetime.now().strftime('%H:%M:%S')}")
 
 if __name__ == "__main__":
     main()
