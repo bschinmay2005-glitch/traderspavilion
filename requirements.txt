@@ -1,3 +1,4 @@
 streamlit
-moneycontrol
 pandas
+requests
+beautifulsoup4
