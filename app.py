@@ -1,77 +1,104 @@
 import streamlit as st
 import pandas as pd
 import requests
+import numpy as np
 import datetime
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Sector Rotation Terminal", layout="wide")
+st.set_page_config(page_title="RRG Sector Rotation Pro", layout="wide")
 
-# --- UI STYLES ---
-st.markdown("""
-<style>
-    .stApp { background: #0b1120; color: #f8fafc; }
-    .quadrant { padding: 20px; border-radius: 10px; margin-bottom: 10px; min-height: 150px; }
-    .leading { background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; }
-    .improving { background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; }
-    .weakening { background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; }
-    .lagging { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; }
-    .sector-pill { background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 20px; margin: 5px; display: inline-block; }
-</style>
-""", unsafe_allow_html=True)
+# --- UI THEME (Institutional Dark) ---
+def apply_styles():
+    st.markdown("""
+    <style>
+        .stApp { background: #080c14; color: #e2e8f0; }
+        .q-card { 
+            padding: 20px; border-radius: 12px; margin-bottom: 20px; 
+            min-height: 220px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .leading { background: rgba(0, 255, 127, 0.05); border-top: 4px solid #00ff7f; }
+        .improving { background: rgba(0, 191, 255, 0.05); border-top: 4px solid #00bfff; }
+        .weakening { background: rgba(255, 215, 0, 0.05); border-top: 4px solid #ffd700; }
+        .lagging { background: rgba(255, 69, 0, 0.05); border-top: 4px solid #ff4500; }
+        
+        .sector-tag {
+            display: inline-block; background: #1e293b; color: white;
+            padding: 6px 12px; border-radius: 6px; margin: 4px;
+            font-size: 0.85rem; font-weight: 600; border: 1px solid #334155;
+        }
+        .header-title { font-size: 1.5rem; font-weight: 800; color: #f8fafc; margin-bottom: 5px; }
+    </style>
+    """, unsafe_allow_html=True)
 
+# --- THE RRG MATH ENGINE ---
 @st.cache_data(ttl=300)
-def get_rotation_data():
-    # We use Yahoo Finance for the raw data to power our own Analysis tool
+def get_rrg_data():
     sectors = {
-        "^CNXIT": "IT", "^CNXBANK": "Bank", "CNXENERGY.NS": "Energy", 
-        "CNXPHARMA.NS": "Pharma", "CNXAUTO.NS": "Auto", "CNXMETAL.NS": "Metal"
+        "^CNXIT": "IT", "^CNXBANK": "Bank", "CNXAUTO.NS": "Auto",
+        "CNXPHARMA.NS": "Pharma", "CNXMETAL.NS": "Metal", "CNXFMCG.NS": "FMCG",
+        "CNXREALTY.NS": "Realty", "CNXENERGY.NS": "Energy", "CNXINFRA.NS": "Infra"
     }
     benchmark = "^NSEI" # Nifty 50
     
-    # Logic: Calculate 1-week and 4-week relative performance
-    # This mimics the RRG Quadrant logic of Strike.money
-    results = {"Leading": [], "Improving": [], "Weakening": [], "Lagging": []}
-    
-    for sym, name in sectors.items():
-        try:
-            # Fetch data (Waterfall method to prevent 401 blocks)
-            url = f"https://query2.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=30d"
-            data = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}).json()
-            prices = data['chart']['result'][0]['indicators']['quote'][0]['close']
-            
-            # Simple Rotation Calculation:
-            # Strength = Price / Benchmark (Simplified for 0-delay)
-            # Momentum = Current Strength / Previous Strength
-            curr_perf = (prices[-1] / prices[-5]) - 1 # 1-week perf
-            prev_perf = (prices[-5] / prices[-20]) - 1 # Prior momentum
-            
-            if curr_perf > 0 and prev_perf > 0: results["Leading"].append(name)
-            elif curr_perf > 0 and prev_perf < 0: results["Improving"].append(name)
-            elif curr_perf < 0 and prev_perf > 0: results["Weakening"].append(name)
-            else: results["Lagging"].append(name)
-        except:
-            continue
+    results = {"Leading": [], "Improving": [], "Lagging": [], "Weakening": []}
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    def fetch_series(ticker):
+        url = f"https://query2.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=100d"
+        data = requests.get(url, headers=headers, timeout=10).json()
+        return np.array(data['chart']['result'][0]['indicators']['quote'][0]['close'])
+
+    try:
+        bench_close = fetch_series(benchmark)
+        
+        for sym, name in sectors.items():
+            try:
+                sec_close = fetch_series(sym)
+                
+                # 1. Calculate Relative Strength (RS)
+                rs = (sec_close / bench_close) * 100
+                
+                # 2. RS-Ratio (Trend of RS) - Simplified JDK 
+                # Comparing 10-day moving average to 40-day
+                rs_ratio = (pd.Series(rs).rolling(10).mean() / pd.Series(rs).rolling(40).mean()).iloc[-1] * 100
+                
+                # 3. RS-Momentum (Rate of change of RS-Ratio)
+                rs_momentum = (rs_ratio / (pd.Series(rs).rolling(10).mean() / pd.Series(rs).rolling(40).mean()).iloc[-5]) * 100
+
+                # 4. Quadrant Logic (RRG Standard)
+                if rs_ratio > 100 and rs_momentum > 100: results["Leading"].append(name)
+                elif rs_ratio < 100 and rs_momentum > 100: results["Improving"].append(name)
+                elif rs_ratio < 100 and rs_momentum < 100: results["Lagging"].append(name)
+                elif rs_ratio > 100 and rs_momentum < 100: results["Weakening"].append(name)
+            except: continue
+    except: pass
     return results
 
 def main():
-    st.title("📊 Sector Rotation Analysis")
-    st.write("Live Relative Strength vs Nifty 50")
-    
-    rotation = get_rotation_data()
-    
+    apply_styles()
+    st.markdown('<div class="header-title">📊 Sector Rotation (RRG) Independent Replica</div>', unsafe_allow_html=True)
+    st.write("Relative Strength & Momentum vs Nifty 50")
+
+    data = get_rrg_data()
+
+    # RRG Grid Layout
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        st.markdown('<div class="quadrant leading"><h3>🟢 Leading</h3>' + 
-                    "".join([f'<span class="sector-pill">{s}</span>' for s in rotation["Leading"]]) + '</div>', unsafe_allow_html=True)
-        st.markdown('<div class="quadrant improving"><h3>🔵 Improving</h3>' + 
-                    "".join([f'<span class="sector-pill">{s}</span>' for s in rotation["Improving"]]) + '</div>', unsafe_allow_html=True)
-        
+        # Improving (Top Left)
+        st.markdown('<div class="q-card improving"><h4>🔵 IMPROVING</h4>' + 
+                    "".join([f'<div class="sector-tag">{s}</div>' for s in data["Improving"]]) + '</div>', unsafe_allow_html=True)
+        # Leading (Top Right)
+        st.markdown('<div class="q-card leading"><h4>🟢 LEADING</h4>' + 
+                    "".join([f'<div class="sector-tag">{s}</div>' for s in data["Leading"]]) + '</div>', unsafe_allow_html=True)
+
     with col2:
-        st.markdown('<div class="quadrant weakening"><h3>🟡 Weakening</h3>' + 
-                    "".join([f'<span class="sector-pill">{s}</span>' for s in rotation["Weakening"]]) + '</div>', unsafe_allow_html=True)
-        st.markdown('<div class="quadrant lagging"><h3>🔴 Lagging</h3>' + 
-                    "".join([f'<span class="sector-pill">{s}</span>' for s in rotation["Lagging"]]) + '</div>', unsafe_allow_html=True)
+        # Lagging (Bottom Left)
+        st.markdown('<div class="q-card lagging"><h4>🔴 LAGGING</h4>' + 
+                    "".join([f'<div class="sector-tag">{s}</div>' for s in data["Lagging"]]) + '</div>', unsafe_allow_html=True)
+        # Weakening (Bottom Right)
+        st.markdown('<div class="q-card weakening"><h4>🟡 WEAKENING</h4>' + 
+                    "".join([f'<div class="sector-tag">{s}</div>' for s in data["Weakening"]]) + '</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
