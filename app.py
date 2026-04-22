@@ -1,99 +1,68 @@
 import streamlit as st
-import pandas as pd
 import requests
-from bs4 import BeautifulSoup
 import datetime
-import time
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Institutional Market Terminal", layout="wide")
+st.set_page_config(page_title="Professional Market Terminal", layout="wide")
 
-# --- CSS FOR MONEYCONTROL STYLE ---
+# --- STYLES ---
 def apply_styles():
     st.markdown("""
     <style>
         .stApp { background: #0b1120; color: #f8fafc; }
         .market-card {
             background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 1.2rem;
             margin-bottom: 12px;
         }
         .ticker-name { color: #94a3b8; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
-        .price-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
-        .ticker-price { color: #ffffff; font-size: 1.4rem; font-weight: 700; }
-        .pct-box { font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; }
-        .pos { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .neg { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .ticker-price { color: #ffffff; font-size: 1.4rem; font-weight: 700; margin-top: 8px; display: block; }
+        .pos { color: #10b981; font-weight: 700; }
+        .neg { color: #ef4444; font-weight: 700; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- THE PERMANENT ENGINE: GOOGLE FINANCE PROXY ---
+# --- AUTHENTICATED DATA FETCHING ---
 @st.cache_data(ttl=60)
-def fetch_permanent_data():
-    # Ticker Mapping for Google Finance
+def fetch_finnhub_data():
+    api_key = st.secrets.get("FINNHUB_KEY")
+    if not api_key:
+        return {"error": "API Key Missing in Secrets"}
+
+    # Tickers: Dow, Nasdaq, S&P, FTSE, DAX, CAC, Nifty (via ETF), Nikkei
     tickers = {
-        ".DJI:INDEXDJX": "Dow Jones", ".IXIC:INDEXNASDAQ": "Nasdaq", ".INX:INDEXSP": "S&P 500",
-        "UKX:INDEXFTSE": "FTSE 100", "PX1:INDEXEURO": "CAC 40", "DAX:INDEXDB": "DAX",
-        "NIFTY_50:INDEXNSE": "Nifty 50", "SENSEX:INDEXBOM": "BSE Sensex", "BANKNIFTY:INDEXNSE": "Nifty Bank",
-        "NI225:INDEXNIKKEI": "Nikkei 225", "HSI:INDEXHONGKONG": "Hang Seng"
+        "DIA": "Dow Jones", "QQQ": "Nasdaq", "SPY": "S&P 500",
+        "VGK": "European Mkts", "EPI": "India (Nifty)", "EWJ": "Nikkei 225"
     }
     
     results = {}
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-
-    for symbol, name in tickers.items():
+    for sym, name in tickers.items():
         try:
-            # We hit Google Finance directly - it rarely blocks cloud IPs
-            url = f"https://www.google.com/finance/quote/{symbol}"
-            response = requests.get(url, headers=headers, timeout=10)
-            
+            url = f"https://finnhub.io/api/v1/quote?symbol={sym}&token={api_key}"
+            response = requests.get(url, timeout=5)
             if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                # Precise selector for price and percentage
-                price = soup.find('div', {'class': 'YMlKbe'}).text
-                change_pct = soup.find('div', {'class': 'Jw7C6b'}).text
-                is_pos = "+" in change_pct
-                
+                d = response.json()
+                # d['c'] is current price, d['dp'] is percent change
                 results[name] = {
-                    "price": price,
-                    "change": change_pct.replace('(', '').replace(')', ''),
-                    "is_pos": is_pos
+                    "price": f"${d['c']:,.2f}",
+                    "change": f"{d['dp']:+.2f}%",
+                    "is_pos": d['dp'] >= 0
                 }
-            time.sleep(0.1) # Micro-delay to prevent trigger
         except:
             continue
     return results
 
-# --- FAIL-SAFE UI RENDERER ---
-def draw_card(name, data_pool):
-    # This block prevents the KeyError that crashed your previous version
-    stats = data_pool.get(name)
-    
-    if not stats:
-        # If data is missing, we show a clean "Updating" state instead of an error
-        st.markdown(f"""
-            <div class="market-card">
-                <div class="ticker-name">{name}</div>
-                <div class="price-row"><span class="ticker-price">Updating...</span></div>
-            </div>
-        """, unsafe_allow_html=True)
-        return
-    
-    status_class = "pos" if stats['is_pos'] else "neg"
-    arrow = "▲" if stats['is_pos'] else "▼"
+def draw_card(name, data):
+    stats = data.get(name, {"price": "N/A", "change": "0.00%", "is_pos": True})
+    color_class = "pos" if stats['is_pos'] else "neg"
     
     st.markdown(f"""
         <div class="market-card">
             <div class="ticker-name">{name}</div>
-            <div class="price-row">
-                <span class="ticker-price">{stats['price']}</span>
-                <span class="pct-box {status_class}">{arrow} {stats['change']}</span>
-            </div>
+            <span class="ticker-price">{stats['price']}</span>
+            <span class="{color_class}">{stats['change']}</span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -101,23 +70,22 @@ def main():
     apply_styles()
     st.title("🏦 Institutional Market Terminal")
     
-    with st.spinner("Syncing Global Feeds..."):
-        data = fetch_permanent_data()
+    data = fetch_finnhub_data()
     
-    # Grid Layout
+    if "error" in data:
+        st.error(data["error"])
+        return
+
     c1, c2, c3 = st.columns(3)
-    
     with c1:
         st.subheader("🇺🇸 US Markets")
         for m in ["Dow Jones", "Nasdaq", "S&P 500"]: draw_card(m, data)
     with c2:
         st.subheader("🇪🇺 European Markets")
-        for m in ["FTSE 100", "CAC 40", "DAX"]: draw_card(m, data)
+        draw_card("European Mkts", data)
     with c3:
         st.subheader("🌏 Asian Markets")
-        for m in ["Nifty 50", "BSE Sensex", "Nikkei 225", "Hang Seng"]: draw_card(m, data)
-
-    st.caption(f"Last Sync: {datetime.datetime.now().strftime('%H:%M:%S')} | Connection: Stable")
+        for m in ["India (Nifty)", "Nikkei 225"]: draw_card(m, data)
 
 if __name__ == "__main__":
     main()
