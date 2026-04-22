@@ -1,6 +1,5 @@
 import streamlit as st
-import requests
-from bs4 import BeautifulSoup
+import yfinance as yf
 import datetime
 
 # --- PAGE CONFIG ---
@@ -24,26 +23,25 @@ def apply_styles():
             margin-bottom: 10px;
             text-decoration: none !important;
             display: block;
+            transition: 0.2s;
         }
-        .ticker-name { color: #94a3b8; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; overflow: hidden; white-space: nowrap; }
+        .market-card:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-2px); }
+        .ticker-name { color: #94a3b8; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
         .price-row { display: flex; align-items: center; justify-content: space-between; }
         .ticker-price { color: #ffffff; font-size: 1.1rem; font-weight: 700; }
-        .pct-box { font-size: 0.8rem; font-weight: 600; padding: 1px 5px; border-radius: 4px; }
-        .pos-bg { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .neg-bg { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .pct-box { font-size: 0.8rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+        .pos-bg { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .neg-bg { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SCRAPER ---
-@st.cache_data(ttl=60)
-def get_data():
-    # Mapping friendly names to Yahoo Finance Symbols
-    tickers = {
-        # Section 1: Top Indices
+# --- DATA FETCHING WITH YFINANCE ---
+@st.cache_data(ttl=120)
+def get_market_data():
+    ticker_map = {
         "^DJI": "Dow Jones", "^IXIC": "Nasdaq", "^GSPC": "S&P 500",
         "^FTSE": "FTSE 100", "^FCHI": "CAC 40", "^GDAXI": "DAX",
         "IN_OR.SN": "GIFT Nifty", "^N225": "Nikkei 225", "^STI": "Straits Times", "^HSI": "Hang Seng",
-        # Section 2: Comprehensive Grid
         "^NSEI": "Nifty 50", "^BSESN": "BSE Sensex", "^NSEBANK": "Nifty Bank", "^VIX": "India VIX",
         "^RUT": "Small Cap 2000", "^VXV": "S&P 500 VIX", "^GSPTSE": "S&P/TSX", "^BVSP": "Bovespa",
         "^MXX": "S&P/BMV IPC", "STOXX50E": "Euro Stoxx 50", "^AEX": "AEX", "^IBEX": "IBEX 35",
@@ -55,27 +53,32 @@ def get_data():
         "^KS11": "KOSPI", "^JKSE": "IDX Composite", "^PSEI": "PSEI Composite"
     }
     
-    url = f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={','.join(tickers.keys())}"
-    headers = {'User-Agent': 'Mozilla/5.0'}
+    symbols = list(ticker_map.keys())
+    # Fetch all data in one go for speed
+    data = yf.download(symbols, period="2d", interval="1d", group_by='ticker', progress=False)
     
-    try:
-        response = requests.get(url, headers=headers).json()
-        raw_data = response['quoteResponse']['result']
-        
-        final_map = {}
-        for item in raw_data:
-            symbol = item.get('symbol')
-            final_map[tickers[symbol]] = {
-                "price": f"{item.get('regularMarketPrice', 0):,.2f}",
-                "change": f"{item.get('regularMarketChangePercent', 0):+.2f}%",
-                "is_pos": item.get('regularMarketChangePercent', 0) >= 0
-            }
-        return final_map
-    except:
-        return {}
+    final_results = {}
+    for sym in symbols:
+        try:
+            # Get latest and previous close to calculate change
+            if sym in data:
+                current_close = data[sym]['Close'].iloc[-1]
+                prev_close = data[sym]['Close'].iloc[-2]
+                pct_change = ((current_close - prev_close) / prev_close) * 100
+                
+                final_results[ticker_map[sym]] = {
+                    "price": f"{current_close:,.2f}",
+                    "change": f"{pct_change:+.2f}%",
+                    "is_pos": pct_change >= 0
+                }
+        except:
+            continue
+    return final_results
 
-def draw_card(name, stats):
+def draw_card(name, data_dict):
+    stats = data_dict.get(name)
     if not stats: return
+    
     bg_class = "pos-bg" if stats['is_pos'] else "neg-bg"
     arrow = "▲" if stats['is_pos'] else "▼"
     tv_url = f"https://www.tradingview.com/chart/?symbol={name.replace(' ', '')}"
@@ -92,32 +95,30 @@ def draw_card(name, stats):
 
 def main():
     apply_styles()
-    data = get_data()
-    
     st.title("🏦 Global Market Monitor")
     
-    # --- SECTION 1: REGIONAL SUMMARY ---
+    with st.spinner("Fetching Live Market Data..."):
+        data = get_market_data()
+    
+    if not data:
+        st.error("API Limit reached or source blocked. Retrying in 60s...")
+        return
+
+    # --- PRIMARY MARKETS ---
     st.markdown('<div class="section-header">🌍 Primary Global Markets</div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
-    
     with c1:
         st.subheader("🇺🇸 US Markets")
-        for m in ["Dow Jones", "Nasdaq", "S&P 500"]:
-            draw_card(m, data.get(m))
-            
+        for m in ["Dow Jones", "Nasdaq", "S&P 500"]: draw_card(m, data)
     with c2:
         st.subheader("🇪🇺 European Markets")
-        for m in ["FTSE 100", "CAC 40", "DAX"]:
-            draw_card(m, data.get(m))
-            
+        for m in ["FTSE 100", "CAC 40", "DAX"]: draw_card(m, data)
     with c3:
         st.subheader("🌏 Asian Markets")
-        for m in ["GIFT Nifty", "Nikkei 225", "Straits Times", "Hang Seng"]:
-            draw_card(m, data.get(m))
+        for m in ["GIFT Nifty", "Nikkei 225", "Straits Times", "Hang Seng"]: draw_card(m, data)
 
-    # --- SECTION 2: COMPREHENSIVE GRID ---
+    # --- COMPREHENSIVE GRID ---
     st.markdown('<div class="section-header">📊 Comprehensive Market Overview</div>', unsafe_allow_html=True)
-    
     all_others = [
         "Nifty 50", "BSE Sensex", "Nifty Bank", "India VIX", "Small Cap 2000", 
         "S&P 500 VIX", "S&P/TSX", "Bovespa", "S&P/BMV IPC", "Euro Stoxx 50", 
@@ -127,12 +128,12 @@ def main():
         "China A50", "Taiwan Weighted", "KOSPI", "IDX Composite", "PSEI Composite"
     ]
     
-    cols = st.columns(5) # 5 cards per row for the big grid
+    grid_cols = st.columns(5)
     for idx, name in enumerate(all_others):
-        with cols[idx % 5]:
-            draw_card(name, data.get(name))
+        with grid_cols[idx % 5]:
+            draw_card(name, data)
 
-    st.caption(f"Real-time data via Yahoo Finance API • Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
+    st.caption(f"Powered by yfinance • Sync Time: {datetime.datetime.now().strftime('%H:%M:%S')}")
 
 if __name__ == "__main__":
     main()
