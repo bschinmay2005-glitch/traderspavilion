@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from moneycontrol import moneycontrol
+from moneycontrol import moneycontrol_api  # Note the _api suffix
 import datetime
 
 # --- SET PAGE CONFIG ---
