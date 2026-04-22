@@ -1,104 +1,28 @@
-import streamlit as st
-import pandas as pd
-import requests
-import numpy as np
-import datetime
+Act as a Senior UI/UX and Fintech Developer. Create a Streamlit dashboard that replicates the 'Sector Rotation' layout but uses the 'TradingView Mini Chart' widget for maximum reliability.
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="RRG Sector Rotation Pro", layout="wide")
+1. The Strategy: > Instead of using Python to fetch data (which causes 401/rate-limit errors), use streamlit.components.v1.html to embed TradingView widgets. This ensures the data is always live and never blocked.
 
-# --- UI THEME (Institutional Dark) ---
-def apply_styles():
-    st.markdown("""
-    <style>
-        .stApp { background: #080c14; color: #e2e8f0; }
-        .q-card { 
-            padding: 20px; border-radius: 12px; margin-bottom: 20px; 
-            min-height: 220px; border: 1px solid rgba(255,255,255,0.05);
-        }
-        .leading { background: rgba(0, 255, 127, 0.05); border-top: 4px solid #00ff7f; }
-        .improving { background: rgba(0, 191, 255, 0.05); border-top: 4px solid #00bfff; }
-        .weakening { background: rgba(255, 215, 0, 0.05); border-top: 4px solid #ffd700; }
-        .lagging { background: rgba(255, 69, 0, 0.05); border-top: 4px solid #ff4500; }
-        
-        .sector-tag {
-            display: inline-block; background: #1e293b; color: white;
-            padding: 6px 12px; border-radius: 6px; margin: 4px;
-            font-size: 0.85rem; font-weight: 600; border: 1px solid #334155;
-        }
-        .header-title { font-size: 1.5rem; font-weight: 800; color: #f8fafc; margin-bottom: 5px; }
-    </style>
-    """, unsafe_allow_html=True)
+2. The Indices (Grouped by your list):
+Arrange the following tickers into a professional 3-column grid layout:
 
-# --- THE RRG MATH ENGINE ---
-@st.cache_data(ttl=300)
-def get_rrg_data():
-    sectors = {
-        "^CNXIT": "IT", "^CNXBANK": "Bank", "CNXAUTO.NS": "Auto",
-        "CNXPHARMA.NS": "Pharma", "CNXMETAL.NS": "Metal", "CNXFMCG.NS": "FMCG",
-        "CNXREALTY.NS": "Realty", "CNXENERGY.NS": "Energy", "CNXINFRA.NS": "Infra"
-    }
-    benchmark = "^NSEI" # Nifty 50
-    
-    results = {"Leading": [], "Improving": [], "Lagging": [], "Weakening": []}
-    headers = {"User-Agent": "Mozilla/5.0"}
+Key/Sectoral: NSE:NIFTY (Benchmark), NSE:CNXAUTO, NSE:CNXIT, NSE:CNXPSUBANK, NSE:CNXPHARMA, NSE:CNXMETAL, NSE:CNXREALTY, NSE:CNXENERGY, NSE:CNXINFRA.
 
-    def fetch_series(ticker):
-        url = f"https://query2.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=100d"
-        data = requests.get(url, headers=headers, timeout=10).json()
-        return np.array(data['chart']['result'][0]['indicators']['quote'][0]['close'])
+Financials/Thematic: NSE:NIFTY_FIN_SERVICE, NSE:CNXFMCG, NSE:CNXMEDIA, NSE:CNXCONSUMP, NSE:CNXPSE, NSE:CNXSERVICE.
 
-    try:
-        bench_close = fetch_series(benchmark)
-        
-        for sym, name in sectors.items():
-            try:
-                sec_close = fetch_series(sym)
-                
-                # 1. Calculate Relative Strength (RS)
-                rs = (sec_close / bench_close) * 100
-                
-                # 2. RS-Ratio (Trend of RS) - Simplified JDK 
-                # Comparing 10-day moving average to 40-day
-                rs_ratio = (pd.Series(rs).rolling(10).mean() / pd.Series(rs).rolling(40).mean()).iloc[-1] * 100
-                
-                # 3. RS-Momentum (Rate of change of RS-Ratio)
-                rs_momentum = (rs_ratio / (pd.Series(rs).rolling(10).mean() / pd.Series(rs).rolling(40).mean()).iloc[-5]) * 100
+New/Specific: NSE:NIFTY_OIL_AND_GAS, NSE:NIFTY_HEALTHCARE, NSE:NIFTY_INDIA_MANUFACTURING, NSE:NIFTY_INDIA_DEFENCE.
 
-                # 4. Quadrant Logic (RRG Standard)
-                if rs_ratio > 100 and rs_momentum > 100: results["Leading"].append(name)
-                elif rs_ratio < 100 and rs_momentum > 100: results["Improving"].append(name)
-                elif rs_ratio < 100 and rs_momentum < 100: results["Lagging"].append(name)
-                elif rs_ratio > 100 and rs_momentum < 100: results["Weakening"].append(name)
-            except: continue
-    except: pass
-    return results
+3. Widget Config:
 
-def main():
-    apply_styles()
-    st.markdown('<div class="header-title">📊 Sector Rotation (RRG) Independent Replica</div>', unsafe_allow_html=True)
-    st.write("Relative Strength & Momentum vs Nifty 50")
+Use the embed-widget-mini-symbol-overview.js.
 
-    data = get_rrg_data()
+Settings: colorTheme: "dark", isTransparent: true, width: "100%", height: 150.
 
-    # RRG Grid Layout
-    col1, col2 = st.columns(2)
+4. Visual Polish:
 
-    with col1:
-        # Improving (Top Left)
-        st.markdown('<div class="q-card improving"><h4>🔵 IMPROVING</h4>' + 
-                    "".join([f'<div class="sector-tag">{s}</div>' for s in data["Improving"]]) + '</div>', unsafe_allow_html=True)
-        # Leading (Top Right)
-        st.markdown('<div class="q-card leading"><h4>🟢 LEADING</h4>' + 
-                    "".join([f'<div class="sector-tag">{s}</div>' for s in data["Leading"]]) + '</div>', unsafe_allow_html=True)
+Set page to layout="wide".
 
-    with col2:
-        # Lagging (Bottom Left)
-        st.markdown('<div class="q-card lagging"><h4>🔴 LAGGING</h4>' + 
-                    "".join([f'<div class="sector-tag">{s}</div>' for s in data["Lagging"]]) + '</div>', unsafe_allow_html=True)
-        # Weakening (Bottom Right)
-        st.markdown('<div class="q-card weakening"><h4>🟡 WEAKENING</h4>' + 
-                    "".join([f'<div class="sector-tag">{s}</div>' for s in data["Weakening"]]) + '</div>', unsafe_allow_html=True)
+Use custom CSS to create a "Terminal" feel with a dark #080c14 background.
 
-if __name__ == "__main__":
-    main()
+Group indices under headers: "Key Sectoral", "Thematic & Finance", and "Emerging & Others".
+
+Output the complete app.py.
