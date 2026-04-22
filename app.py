@@ -1,95 +1,99 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 1. Page Config & Terminal Styling
-st.set_page_config(page_title="NSE Sector Rotation Terminal", layout="wide")
+st.set_page_config(page_title="Sector Rotation Terminal", layout="wide")
 
+# Custom CSS for the "Strike" Dark Mode Aesthetic
 st.markdown("""
     <style>
-    /* Dark Terminal Theme */
-    .stApp {
-        background-color: #080c14;
-        color: #e0e0e0;
+    .stApp { background-color: #050505; color: #ffffff; }
+    .metric-card {
+        background-color: #0f111a;
+        border: 1px solid #1e222d;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
     }
-    .sector-card {
-        background-color: #121722;
-        border: 1px solid #1f2937;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 15px;
-    }
-    h2, h3 {
-        color: #3b82f6 !important;
-        font-family: 'Courier New', monospace;
-        border-bottom: 1px solid #1f2937;
-        padding-bottom: 10px;
-    }
-    /* Remove padding from streamlit containers for tighter grid */
-    [data-testid="column"] {
-        padding: 0 5px !important;
-    }
+    h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 700; color: #00ffcc !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. TradingView Widget Component Function
-def tv_mini_chart(symbol):
-    """Embeds the TradingView Mini Chart Widget."""
-    html_code = f"""
+def render_comparison_chart():
+    """The 'Rotation' view - Multiple sectors vs Nifty"""
+    html = """
+    <div class="tradingview-widget-container" style="height:500px;">
+      <div id="tradingview_rotation"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+      <script type="text/javascript">
+      new TradingView.widget({
+        "autosize": true,
+        "symbol": "NSE:NIFTY",
+        "interval": "D",
+        "timezone": "Asia/Kolkata",
+        "theme": "dark",
+        "style": "3",
+        "locale": "en",
+        "enable_publishing": false,
+        "hide_top_toolbar": false,
+        "container_id": "tradingview_rotation",
+        "watchlist": [
+            "NSE:CNXAUTO", "NSE:CNXIT", "NSE:CNXPSUBANK", "NSE:CNXMETAL", 
+            "NSE:CNXREALTY", "NSE:NIFTY_FIN_SERVICE", "NSE:CNXFMCG"
+        ],
+        "details": true,
+        "hotlist": true,
+        "calendar": false
+      });
+      </script>
+    </div>
+    """
+    components.html(html, height=500)
+
+def render_gauge(symbol):
+    """Replicates the Leading/Lagging sentiment using TA Gauges"""
+    html = f"""
     <div class="tradingview-widget-container">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
       {{
-      "symbol": "{symbol}",
-      "width": "100%",
-      "height": 150,
-      "locale": "en",
-      "dateRange": "1M",
-      "colorTheme": "dark",
-      "isTransparent": true,
-      "autosize": false,
-      "largeChartUrl": ""
+        "interval": "1D",
+        "width": "100%",
+        "isTransparent": true,
+        "height": 280,
+        "symbol": "{symbol}",
+        "showIntervalTabs": true,
+        "displayMode": "single",
+        "locale": "en",
+        "colorTheme": "dark"
       }}
       </script>
     </div>
     """
-    return components.html(html_code, height=160)
+    components.html(html, height=280)
 
-# 3. Ticker Groups
-groups = {
-    "Key Sectoral": [
-        "NSE:NIFTY", "NSE:CNXAUTO", "NSE:CNXIT", 
-        "NSE:CNXPSUBANK", "NSE:CNXPHARMA", "NSE:CNXMETAL", 
-        "NSE:CNXREALTY", "NSE:CNXENERGY", "NSE:CNXINFRA"
-    ],
-    "Thematic & Finance": [
-        "NSE:NIFTY_FIN_SERVICE", "NSE:CNXFMCG", "NSE:CNXMEDIA", 
-        "NSE:CNXCONSUMP", "NSE:CNXPSE", "NSE:CNXSERVICE"
-    ],
-    "Emerging & Others": [
-        "NSE:NIFTY_OIL_AND_GAS", "NSE:NIFTY_HEALTHCARE", 
-        "NSE:NIFTY_INDIA_MANUFACTURING", "NSE:NIFTY_INDIA_DEFENCE"
-    ]
-}
+# --- Layout ---
 
-# 4. Dashboard Header
-st.title("⚡ NSE Sectoral Rotation Terminal")
+st.title("📊 Sector Rotation Intelligence")
+st.markdown("Relative Strength & Momentum Matrix")
+
+# 1. Top Section: The Comparison Chart (The "Strike" Rotation View)
+st.subheader("Performance Comparison (Relative to Nifty)")
+render_comparison_chart()
+
 st.markdown("---")
 
-# 5. Grid Rendering Logic
-for section_title, tickers in groups.items():
-    st.subheader(section_title)
-    
-    # Create rows based on 3-column grid
-    cols = st.columns(3)
-    for index, ticker in enumerate(tickers):
-        with cols[index % 3]:
-            st.markdown(f'<div class="sector-card">', unsafe_allow_html=True)
-            tv_mini_chart(ticker)
-            st.markdown('</div>', unsafe_allow_html=True)
+# 2. Sector Grid: The Sentiment Matrix
+sectors = {
+    "Cyclical / High Beta": ["NSE:CNXAUTO", "NSE:CNXMETAL", "NSE:CNXREALTY"],
+    "Defensive / Stability": ["NSE:CNXFMCG", "NSE:CNXPHARMA", "NSE:CNXINFRA"],
+    "Financials & IT": ["NSE:NIFTY_FIN_SERVICE", "NSE:CNXPSUBANK", "NSE:CNXIT"]
+}
 
-# Footer
-st.markdown("""
-<div style="text-align: center; color: #4b5563; font-size: 0.8rem; margin-top: 50px;">
-    Browser-side execution powered by TradingView. No API limits applied.
-</div>
-""", unsafe_allow_html=True)
+for group_name, ticker_list in sectors.items():
+    st.subheader(group_name)
+    cols = st.columns(3)
+    for i, ticker in enumerate(ticker_list):
+        with cols[i]:
+            st.markdown(f'<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f"**{ticker.split(':')[-1]}**")
+            render_gauge(ticker)
+            st.markdown('</div>', unsafe_allow_html=True)
