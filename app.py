@@ -75,7 +75,7 @@ def main():
 
     with col3:
         st.subheader("🌏 ASIAN MARKETS")
-        render_widget("NSE:NIFTY")        # Nifty 50
+        render_widget("NSE:NIFTY 50")        # Nifty 50
         render_widget("BSE:SENSEX")       # Sensex
         render_widget("FX_IDC:USDINR")    # USD/INR (Crucial for Asian Context)
 
