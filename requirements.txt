@@ -1,5 +1,3 @@
 streamlit
+moneycontrol
 pandas
-smartapi-python
-pyotp
-logzero
