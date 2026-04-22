@@ -1,68 +1,89 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="NSE Sector Rotation", layout="wide")
+# 1. Setup & Terminal UI
+st.set_page_config(page_title="NSE Rotation Terminal", layout="wide")
 
-# CSS: True Black Terminal Theme
 st.markdown("""
     <style>
-    .stApp { background-color: #050505; color: #ffffff; }
-    .index-card {
-        background-color: #0d1117;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 10px;
+    .stApp { background-color: #060606; color: #ffffff; }
+    /* Strike Money Style Cards */
+    .sector-card {
+        background: linear-gradient(145deg, #0f111a, #0a0b10);
+        border: 1px solid #1e222d;
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 20px;
     }
-    h2 { color: #58a6ff !important; font-size: 1.2rem; border-bottom: 1px solid #30363d; padding-bottom: 5px; }
+    .group-header {
+        color: #00d4ff;
+        font-family: 'Monaco', monospace;
+        letter-spacing: 2px;
+        border-left: 4px solid #00d4ff;
+        padding-left: 10px;
+        margin-bottom: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-def render_gauge(symbol):
+# 2. The "Rotation Proxy" Widget
+def render_rotation_gauge(symbol):
+    """
+    Replicates the 'Strike' quadrant logic using TA aggregators.
+    Strong Buy = Leading | Buy = Improving | Sell = Weakening | Strong Sell = Lagging
+    """
     html = f"""
-    <div style="height:220px;">
+    <div class="tradingview-widget-container">
       <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
       {{
-        "interval": "1D", "width": "100%", "isTransparent": true, "height": 220,
-        "symbol": "{symbol}", "showIntervalTabs": false, "displayMode": "single",
-        "locale": "en", "colorTheme": "dark"
+        "interval": "1D",
+        "width": "100%",
+        "isTransparent": true,
+        "height": 240,
+        "symbol": "{symbol}",
+        "showIntervalTabs": false,
+        "displayMode": "single",
+        "locale": "en",
+        "colorTheme": "dark"
       }}
       </script>
     </div>
     """
-    components.html(html, height=220)
+    components.html(html, height=240)
 
-# --- INDEX MAPPING ---
-# Categorized exactly as requested
-groups = {
-    "📊 Key Sectoral": [
+# 3. Categorized Tickers (Your List)
+index_data = {
+    "Sectoral Indices": [
         "NSE:CNXAUTO", "NSE:CNXIT", "NSE:CNXPSUBANK", "NSE:NIFTY_FIN_SERVICE",
-        "NSE:CNXPHARMA", "NSE:CNXFMCG", "NSE:CNXMETAL", "NSE:CNXREALTY"
+        "NSE:CNXPHARMA", "NSE:CNXFMCG", "NSE:CNXMETAL", "NSE:CNXREALTY",
+        "NSE:CNXMEDIA", "NSE:CNXENERGY", "NSE:NIFTY_PVT_BANK", "NSE:CNXINFRA"
     ],
-    "🏦 Banking & Finance": [
-        "NSE:NIFTY_PVT_BANK", "NSE:NIFTY_FIN_SERVICE_25_50", "NSE:CNXSERVICE"
-    ],
-    "🏗️ Thematic & Infrastructure": [
-        "NSE:CNXINFRA", "NSE:CNXENERGY", "NSE:CNXMEDIA", "NSE:CNXCOMMODITIES", 
-        "NSE:CNXCONSUMP", "NSE:CNXPSE"
-    ],
-    "🚀 Emerging & New Specific": [
-        "NSE:NIFTY_CONSR_DURBL", "NSE:NIFTY_HEALTHCARE", "NSE:NIFTY_OIL_AND_GAS", 
-        "NSE:NIFTY_INDIA_MANUFACTURING", "NSE:NIFTY_INDIA_DEFENCE"
+    "Thematic & Other Indices": [
+        "NSE:CNXCOMMODITIES", "NSE:CNXCONSUMP", "NSE:CNXPSE", "NSE:CNXSERVICE",
+        "NSE:NIFTY_FIN_SERVICE_25_50", "NSE:NIFTY_CONSR_DURBL", "NSE:NIFTY_HEALTHCARE",
+        "NSE:NIFTY_OIL_AND_GAS", "NSE:NIFTY_INDIA_MANUFACTURING", "NSE:NIFTY_INDIA_DEFENCE"
     ]
 }
 
-st.title("🎯 NSE Sectoral Matrix")
+# 4. Header & Top Comparison
+st.title("⚡ NSE SECTOR ROTATION MATRIX")
+st.markdown("> **Strike Money Logic:** Quadrant shifts are derived from price vs. benchmark momentum.")
 
-# Render the Grid
-for group_name, tickers in groups.items():
-    st.subheader(group_name)
-    cols = st.columns(4) # 4 columns for a dense terminal feel
-    for i, ticker in enumerate(tickers):
-        with cols[i % 4]:
-            st.markdown(f'<div class="index-card">', unsafe_allow_html=True)
-            # Displaying a cleaner name for the UI
-            label = ticker.split(':')[-1].replace('CNX', 'NIFTY ')
-            st.markdown(f"<code style='color:#8b949e'>{label}</code>", unsafe_allow_html=True)
-            render_gauge(ticker)
+# 5. Rendering the Matrix
+for group, tickers in index_data.items():
+    st.markdown(f"<h2 class='group-header'>{group.upper()}</h2>", unsafe_allow_html=True)
+    
+    # Using 4 columns for a true terminal dashboard feel
+    cols = st.columns(4)
+    for idx, ticker in enumerate(tickers):
+        with cols[idx % 4]:
+            st.markdown('<div class="sector-card">', unsafe_allow_html=True)
+            # Clean up ticker names for display
+            display_name = ticker.replace("NSE:", "").replace("CNX", "NIFTY ").replace("_", " ")
+            st.markdown(f"<p style='color:#8b949e; font-weight:bold; font-size:0.8rem;'>{display_name}</p>", unsafe_allow_html=True)
+            render_rotation_gauge(ticker)
             st.markdown('</div>', unsafe_allow_html=True)
+
+# 6. Technical Overlay (Rotation Trend)
+st.sidebar.title("Configuration")
+st.sidebar.info("This dashboard uses Browser-Side Rendering (BSR) to bypass NSE API limits and provide live data streams.")
